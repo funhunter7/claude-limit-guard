@@ -34,6 +34,7 @@ The plugin exposes three settings you can change **directly in Claude Code** via
 | `threshold` | number | `95` | At or above this usage percentage the guard routine triggers. |
 | `locale` | string (BCP-47) | `en-US` | Language for the weekday in the status-line reset countdown, e.g. `cs-CZ`, `de-DE`, `ja-JP`. |
 | `guard_action` | string | `""` | What Claude should do when the threshold is reached. Leave empty to use the built-in save-and-handoff routine. |
+| `time_format` | string | `system` | Reset time format in the status line: `system` (follow OS), `12` (`→5:00 PM`), or `24` (`→17:00`). |
 
 ### Setting them
 - **`/config`** — pick the plugin and edit the values interactively (easiest).
@@ -54,6 +55,12 @@ The plugin exposes three settings you can change **directly in Claude Code** via
 ### Per-project override
 Drop `.claude/limit-guard.json` and `.claude/limit-guard.md` (copy from `templates/`)
 into any project to override these settings for that project only.
+
+### Setting the guard action interactively
+Run **`/limit-guard-action`** in Claude Code to set or clear the guard action without
+editing JSON by hand. It asks whether to apply it **globally** (`settings.json`) or to
+the **current project** (`.claude/limit-guard.json`), or to **clear** an existing one.
+Writes go through a validated helper that preserves your other settings.
 
 ### Precedence (most specific wins)
 

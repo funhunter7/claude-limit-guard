@@ -8,7 +8,7 @@ const BREACH = { five_hour: { utilization: 96, resets_at: '2026-05-31T06:00:00+0
                  seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
 const NOW = new Date('2026-05-31T01:00:00+02:00');
 
-function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null } = {}) {
+function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null, timeFormat = '24' } = {}) {
   return {
     loadConfig: () => ({
       threshold: 95,
@@ -16,6 +16,7 @@ function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = nu
       handoff: '.claude/RESUME.md',
       locale,
       guardAction,
+      timeFormat,
     }),
     getUsage: async () => usage,
     handoffExists: () => handoffExists,
@@ -85,4 +86,11 @@ test('--resume-check: handoff exists -> SessionStart context', async () => {
 test('--resume-check: no handoff -> empty object', async () => {
   const out = JSON.parse(await runCli('--resume-check', '/proj', deps(SAMPLE, { handoffExists: false })));
   assert.deepEqual(out, {});
+});
+
+test('--statusline: timeFormat 12 -> 12h same-day time', async () => {
+  const sample = { five_hour: { utilization: 72, resets_at: '2026-05-31T05:00:00+02:00' },
+                   seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
+  const out = await runCli('--statusline', '/proj', deps(sample, { timeFormat: '12' }));
+  assert.match(out.replace(/ /g, ' '), /5h 72% →5:00 AM/);
 });
