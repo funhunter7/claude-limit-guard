@@ -34,6 +34,7 @@ The plugin exposes three settings you can change **directly in Claude Code** via
 | `threshold` | number | `95` | At or above this usage percentage the guard routine triggers. |
 | `locale` | string (BCP-47) | `en-US` | Language for the weekday in the status-line reset countdown, e.g. `cs-CZ`, `de-DE`, `ja-JP`. |
 | `guard_action` | string | `""` | What Claude should do when the threshold is reached. Leave empty to use the built-in save-and-handoff routine. |
+| `time_format` | string | `system` | Reset time format in the status line: `system` (follow OS), `12` (`→5:00 PM`), or `24` (`→17:00`). |
 
 ### Setting them
 - **`/config`** — pick the plugin and edit the values interactively (easiest).
