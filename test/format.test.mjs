@@ -21,3 +21,22 @@ test('bandEmoji: unknown utilization -> white', () => {
   assert.equal(bandEmoji(null, 95), '⚪');
   assert.equal(bandEmoji(undefined, 95), '⚪');
 });
+
+import { formatReset } from '../lib/format.mjs';
+
+test('formatReset: same local day -> arrow + HH:MM', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  assert.equal(formatReset('2026-05-31T06:00:00+02:00', now), '→06:00');
+});
+
+test('formatReset: different day -> arrow + czech weekday abbrev', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00'); // neděle
+  // 2026-06-03 is Wednesday -> "st"
+  assert.equal(formatReset('2026-06-03T10:00:00+02:00', now), '→st');
+});
+
+test('formatReset: missing/invalid -> empty string', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  assert.equal(formatReset(null, now), '');
+  assert.equal(formatReset('not-a-date', now), '');
+});
