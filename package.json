@@ -1,6 +1,6 @@
 {
   "name": "claude-limit-guard",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Claude Code plugin that watches subscription usage limits and gracefully saves/resumes work at a threshold.",
   "type": "module",
   "private": true,
