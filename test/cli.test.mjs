@@ -19,7 +19,7 @@ function deps(usage, { handoffExists = false } = {}) {
 
 test('--statusline: plain emoji + percentages', async () => {
   const out = await runCli('--statusline', '/proj', deps(SAMPLE));
-  assert.equal(out, '🟢 5h 72% →06:00 · 🟢 7d 39% →st');
+  assert.equal(out, '🟢 5h 72% →06:00 · 🟢 7d 39% →Wed');
 });
 
 test('--context: under threshold -> info, no guard directive', async () => {
