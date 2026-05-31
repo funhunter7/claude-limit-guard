@@ -12,8 +12,11 @@
 - **ASCII style** — new `style` option (`auto`/`emoji`/`ascii`); `auto` falls back to
   ASCII on legacy Windows console where colored emoji don't render.
 - **Safer Stop hook** — the Stop guard no longer loops when a custom guard action does
-  not write a handoff (one block per reset window).
-- CI runs the test suite on push/PR.
+  not write a handoff (one block per reset window, scoped per project).
+- **Robust global config key** — the global guard action is written under the real
+  `claude-limit-guard@<marketplace>` key (auto-detected, or `CLAUDE_LIMIT_GUARD_PLUGIN_KEY`
+  override) instead of a hardcoded marketplace name.
+- CI runs the test suite on push/PR. MIT licensed.
 
 ## 0.1.0
 
