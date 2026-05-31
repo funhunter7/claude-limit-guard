@@ -135,3 +135,23 @@ test('formatStatusLine: hour12 true switches same-day time to 12h', () => {
   const out = formatStatusLine(sample, 95, ['five_hour'], now, 'en-US', true);
   assert.match(out.replace(/ /g, ' '), /🟢 5h 72% →5:00 PM/);
 });
+
+import { GLYPHS, resolveStyle } from '../lib/format.mjs';
+
+test('resolveStyle: explicit emoji/ascii', () => {
+  assert.equal(resolveStyle('emoji', {}, 'win32'), GLYPHS.emoji);
+  assert.equal(resolveStyle('ascii', {}, 'linux'), GLYPHS.ascii);
+});
+
+test('resolveStyle: auto on non-windows -> emoji', () => {
+  assert.equal(resolveStyle('auto', {}, 'linux'), GLYPHS.emoji);
+});
+
+test('resolveStyle: auto on windows conhost -> ascii', () => {
+  assert.equal(resolveStyle('auto', {}, 'win32'), GLYPHS.ascii);
+});
+
+test('resolveStyle: auto on windows terminal/vscode -> emoji', () => {
+  assert.equal(resolveStyle('auto', { WT_SESSION: '1' }, 'win32'), GLYPHS.emoji);
+  assert.equal(resolveStyle('auto', { TERM_PROGRAM: 'vscode' }, 'win32'), GLYPHS.emoji);
+});
