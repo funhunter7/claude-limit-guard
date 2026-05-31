@@ -29,7 +29,7 @@ Drop `.claude/limit-guard.json` and `.claude/limit-guard.md` (copy from `templat
 into any project to override the threshold and the guard routine for that project.
 
 ## How it works
-- **Status line** shows `🟢 5h 72% →06:00 · 🟢 7d 39% →st` (emoji = band, % always shown).
+- **Status line** shows `🟢 5h 72% →06:00 · 🟢 7d 39% →Wed` (emoji = band, % always shown).
 - **UserPromptSubmit / Stop hooks** inject the live limit; at/above the threshold they
   instruct Claude to run the guard routine.
 - **SessionStart hook** offers to resume from the handoff file after a reset.

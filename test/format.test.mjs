@@ -29,10 +29,10 @@ test('formatReset: same local day -> arrow + HH:MM', () => {
   assert.equal(formatReset('2026-05-31T06:00:00+02:00', now), '→06:00');
 });
 
-test('formatReset: different day -> arrow + czech weekday abbrev', () => {
-  const now = new Date('2026-05-31T01:00:00+02:00'); // neděle
-  // 2026-06-03 is Wednesday -> "st"
-  assert.equal(formatReset('2026-06-03T10:00:00+02:00', now), '→st');
+test('formatReset: different day -> arrow + english weekday abbrev', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00'); // Sunday
+  // 2026-06-03 is Wednesday -> "Wed"
+  assert.equal(formatReset('2026-06-03T10:00:00+02:00', now), '→Wed');
 });
 
 test('formatReset: missing/invalid -> empty string', () => {
@@ -59,7 +59,7 @@ test('formatLimit: unknown limit -> white placeholder', () => {
 test('formatStatusLine: both limits joined by middot', () => {
   assert.equal(
     formatStatusLine(SAMPLE, 95, ['five_hour', 'seven_day'], NOW),
-    '🟢 5h 72% →06:00 · 🟢 7d 39% →st'
+    '🟢 5h 72% →06:00 · 🟢 7d 39% →Wed'
   );
 });
 
