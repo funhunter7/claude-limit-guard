@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { loadConfig as defaultLoadConfig } from '../lib/config.mjs';
 import { getUsage as defaultGetUsage } from '../lib/usage.mjs';
 import { formatStatusLine } from '../lib/format.mjs';
@@ -66,6 +67,7 @@ export async function runCli(mode, cwd, deps = {}) {
 
 // ---- real entrypoint (not exercised by unit tests) ----
 function readCwdFromStdin() {
+  if (process.stdin.isTTY) return process.cwd(); // no piped hook payload to read
   try {
     const raw = readFileSync(0, 'utf8'); // fd 0 = stdin
     const j = JSON.parse(raw);
@@ -75,7 +77,7 @@ function readCwdFromStdin() {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('usage.mjs')) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const mode = process.argv[2] || '--statusline';
   const cwd = readCwdFromStdin();
   runCli(mode, cwd)
