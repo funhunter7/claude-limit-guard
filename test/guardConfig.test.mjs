@@ -86,3 +86,31 @@ test('clearGlobalGuard: no file -> no throw', () => {
   const fs = fakeFs();
   assert.doesNotThrow(() => clearGlobalGuard({ ...fs, env: ENV }));
 });
+
+test('setGlobalGuard: writes under an existing claude-limit-guard@* key', () => {
+  const fs = fakeFs();
+  const path = setGlobalGuard('x', { ...fs, env: ENV });
+  fs.files.set(path, JSON.stringify({ pluginConfigs: { 'claude-limit-guard@my-market': { foo: 1 } } }));
+  setGlobalGuard('new', { ...fs, env: ENV });
+  const obj = JSON.parse(fs.files.get(path));
+  assert.equal(obj.pluginConfigs['claude-limit-guard@my-market'].guard_action, 'new');
+  assert.equal(obj.pluginConfigs['claude-limit-guard@my-market'].foo, 1);
+  assert.equal(obj.pluginConfigs[PLUGIN_KEY], undefined); // did not create the default key
+});
+
+test('setGlobalGuard: CLAUDE_LIMIT_GUARD_PLUGIN_KEY override picks the key', () => {
+  const fs = fakeFs();
+  const path = setGlobalGuard('x', { ...fs, env: { ...ENV, CLAUDE_LIMIT_GUARD_PLUGIN_KEY: 'foo@bar' } });
+  const obj = JSON.parse(fs.files.get(path));
+  assert.equal(obj.pluginConfigs['foo@bar'].guard_action, 'x');
+});
+
+test('clearGlobalGuard: clears under an existing claude-limit-guard@* key', () => {
+  const fs = fakeFs();
+  const path = setGlobalGuard('x', { ...fs, env: ENV });
+  fs.files.set(path, JSON.stringify({ pluginConfigs: { 'claude-limit-guard@mk': { guard_action: 'x', threshold: 90 } } }));
+  clearGlobalGuard({ ...fs, env: ENV });
+  const obj = JSON.parse(fs.files.get(path));
+  assert.equal(obj.pluginConfigs['claude-limit-guard@mk'].guard_action, undefined);
+  assert.equal(obj.pluginConfigs['claude-limit-guard@mk'].threshold, 90);
+});
