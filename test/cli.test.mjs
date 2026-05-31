@@ -8,9 +8,15 @@ const BREACH = { five_hour: { utilization: 96, resets_at: '2026-05-31T06:00:00+0
                  seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
 const NOW = new Date('2026-05-31T01:00:00+02:00');
 
-function deps(usage, { handoffExists = false } = {}) {
+function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null } = {}) {
   return {
-    loadConfig: () => ({ threshold: 95, watch: ['five_hour', 'seven_day'], handoff: '.claude/RESUME.md' }),
+    loadConfig: () => ({
+      threshold: 95,
+      watch: ['five_hour', 'seven_day'],
+      handoff: '.claude/RESUME.md',
+      locale,
+      guardAction,
+    }),
     getUsage: async () => usage,
     handoffExists: () => handoffExists,
     now: () => NOW,
@@ -35,10 +41,29 @@ test('--context: breach -> guard directive present', async () => {
   assert.match(out.hookSpecificOutput.additionalContext, /\.claude\/RESUME\.md/);
 });
 
+test('--context: custom guardAction overrides built-in directive', async () => {
+  const d = deps(BREACH, { guardAction: 'Zavolej manželce a vypni server.' });
+  const out = JSON.parse(await runCli('--context', '/proj', d));
+  assert.match(out.hookSpecificOutput.additionalContext, /PŘEKROČEN PRÁH/);
+  assert.match(out.hookSpecificOutput.additionalContext, /Zavolej manželce a vypni server\./);
+});
+
+test('--statusline: locale switches weekday language', async () => {
+  const out = await runCli('--statusline', '/proj', deps(SAMPLE, { locale: 'cs-CZ' }));
+  assert.equal(out, '🟢 5h 72% →06:00 · 🟢 7d 39% →st');
+});
+
 test('--stop: breach + no handoff -> block to run guard', async () => {
   const out = JSON.parse(await runCli('--stop', '/proj', deps(BREACH, { handoffExists: false })));
   assert.equal(out.decision, 'block');
   assert.match(out.reason, /guard/i);
+});
+
+test('--stop: custom guardAction appears in block reason', async () => {
+  const d = deps(BREACH, { handoffExists: false, guardAction: 'Zavolej manželce a vypni server.' });
+  const out = JSON.parse(await runCli('--stop', '/proj', d));
+  assert.equal(out.decision, 'block');
+  assert.match(out.reason, /Zavolej manželce a vypni server\./);
 });
 
 test('--stop: breach + handoff already exists -> allow stop (no loop)', async () => {

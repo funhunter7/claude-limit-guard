@@ -31,7 +31,7 @@ export async function runCli(mode, cwd, deps = {}) {
   }
 
   const usage = await getUsage();
-  const line = formatStatusLine(usage, cfg.threshold, cfg.watch, now());
+  const line = formatStatusLine(usage, cfg.threshold, cfg.watch, now(), cfg.locale);
 
   if (mode === '--statusline') return line;
 
@@ -40,23 +40,26 @@ export async function runCli(mode, cwd, deps = {}) {
   if (mode === '--context') {
     let ctx = `Limit předplatného (claude-limit-guard): ${line}. Práh ${cfg.threshold}%.`;
     if (breached.length) {
-      ctx +=
-        ` PŘEKROČEN PRÁH (${breached.join(', ')}). Spusť guard rutinu: dokonči atomický krok, ` +
-        `ulož handoff do ${cfg.handoff} (co hotovo, co zbývá, dotčené soubory, další kroky, čas resetu), ` +
-        `oznam uživateli že může vypnout PC, přestaň brát nové úkoly. ` +
-        `Pokud existuje .claude/limit-guard.md, řiď se jím.`;
+      const action = cfg.guardAction
+        ? cfg.guardAction
+        : `Spusť guard rutinu: dokonči atomický krok, ulož handoff do ${cfg.handoff} ` +
+          `(co hotovo, co zbývá, dotčené soubory, další kroky, čas resetu), ` +
+          `oznam uživateli že může vypnout PC, přestaň brát nové úkoly. ` +
+          `Pokud existuje .claude/limit-guard.md, řiď se jím.`;
+      ctx += ` PŘEKROČEN PRÁH (${breached.join(', ')}). ${action}`;
     }
     return JSON.stringify({ hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: ctx } });
   }
 
   if (mode === '--stop') {
     if (breached.length && !hoExists) {
+      const action = cfg.guardAction
+        ? cfg.guardAction
+        : `Nepřestávej — spusť guard rutinu: dokonči atomický krok, ulož handoff do ${cfg.handoff}, ` +
+          `oznam uživateli že může vypnout PC. Řiď se .claude/limit-guard.md pokud existuje.`;
       return JSON.stringify({
         decision: 'block',
-        reason:
-          `claude-limit-guard: limit přes práh ${cfg.threshold}% (${breached.join(', ')}). ` +
-          `Nepřestávej — spusť guard rutinu: dokonči atomický krok, ulož handoff do ${cfg.handoff}, ` +
-          `oznam uživateli že může vypnout PC. Řiď se .claude/limit-guard.md pokud existuje.`,
+        reason: `claude-limit-guard: limit přes práh ${cfg.threshold}% (${breached.join(', ')}). ${action}`,
       });
     }
     return '{}';
