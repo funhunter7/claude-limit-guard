@@ -52,3 +52,30 @@ test('loadConfig: project file overrides env option (most specific wins)', () =>
   const cfg = loadConfig('/proj', readFile, { CLAUDE_PLUGIN_OPTION_THRESHOLD: '90' });
   assert.equal(cfg.threshold, 80);
 });
+
+test('loadConfig: timeFormat defaults to system', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, noEnv).timeFormat, 'system');
+});
+
+test('loadConfig: reads CLAUDE_PLUGIN_OPTION_TIME_FORMAT', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  const cfg = loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_TIME_FORMAT: '12' });
+  assert.equal(cfg.timeFormat, '12');
+});
+
+test('loadConfig: project timeFormat overrides env', () => {
+  const readFile = () => JSON.stringify({ timeFormat: '24' });
+  const cfg = loadConfig('/proj', readFile, { CLAUDE_PLUGIN_OPTION_TIME_FORMAT: '12' });
+  assert.equal(cfg.timeFormat, '24');
+});
+
+test('loadConfig: numeric project timeFormat coerced to string', () => {
+  const readFile = () => JSON.stringify({ timeFormat: 12 });
+  assert.equal(loadConfig('/proj', readFile, noEnv).timeFormat, '12');
+});
+
+test('loadConfig: invalid timeFormat falls back to system', () => {
+  const readFile = () => JSON.stringify({ timeFormat: 'bogus' });
+  assert.equal(loadConfig('/proj', readFile, noEnv).timeFormat, 'system');
+});
