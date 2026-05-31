@@ -1,0 +1,11 @@
+{
+  "name": "claude-limit-guard",
+  "owner": { "name": "filka" },
+  "plugins": [
+    {
+      "name": "claude-limit-guard",
+      "source": "./",
+      "description": "Watches Claude subscription usage limits; status line, context injection, and graceful save/resume at a configurable threshold."
+    }
+  ]
+}
