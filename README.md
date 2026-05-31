@@ -56,6 +56,12 @@ The plugin exposes three settings you can change **directly in Claude Code** via
 Drop `.claude/limit-guard.json` and `.claude/limit-guard.md` (copy from `templates/`)
 into any project to override these settings for that project only.
 
+### Setting the guard action interactively
+Run **`/limit-guard-action`** in Claude Code to set or clear the guard action without
+editing JSON by hand. It asks whether to apply it **globally** (`settings.json`) or to
+the **current project** (`.claude/limit-guard.json`), or to **clear** an existing one.
+Writes go through a validated helper that preserves your other settings.
+
 ### Precedence (most specific wins)
 
 | Priority | Source |
