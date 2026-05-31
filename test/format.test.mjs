@@ -104,3 +104,34 @@ test('resolveHour12: system uses injected detector', () => {
 test('resolveHour12: unknown value treated as system', () => {
   assert.equal(resolveHour12(undefined, () => 'h12'), true);
 });
+
+test('formatReset: 12h same-day -> localized AM/PM', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  const out = formatReset('2026-05-31T17:00:00+02:00', now, 'en-US', true);
+  assert.equal(out.replace(/ /g, ' '), '→5:00 PM');
+});
+
+test('formatReset: 12h respects locale wording', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  const out = formatReset('2026-05-31T17:00:00+02:00', now, 'cs-CZ', true);
+  assert.match(out, /odp\./);
+  assert.match(out, /5:00/);
+});
+
+test('formatReset: 12h noon -> 12:00 PM', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  const noon = formatReset('2026-05-31T12:00:00+02:00', now, 'en-US', true);
+  assert.match(noon.replace(/ /g, ' '), /12:00 PM/);
+});
+
+test('formatReset: hour12 defaults false -> 24h unchanged', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  assert.equal(formatReset('2026-05-31T17:00:00+02:00', now, 'en-US'), '→17:00');
+});
+
+test('formatStatusLine: hour12 true switches same-day time to 12h', () => {
+  const sample = { five_hour: { utilization: 72, resets_at: '2026-05-31T17:00:00+02:00' } };
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  const out = formatStatusLine(sample, 95, ['five_hour'], now, 'en-US', true);
+  assert.match(out.replace(/ /g, ' '), /🟢 5h 72% →5:00 PM/);
+});
