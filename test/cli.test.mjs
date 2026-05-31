@@ -8,7 +8,7 @@ const BREACH = { five_hour: { utilization: 96, resets_at: '2026-05-31T06:00:00+0
                  seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
 const NOW = new Date('2026-05-31T01:00:00+02:00');
 
-function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null, timeFormat = '24' } = {}) {
+function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null, timeFormat = '24', style = 'emoji', shouldBlockStop = () => true } = {}) {
   return {
     loadConfig: () => ({
       threshold: 95,
@@ -17,9 +17,11 @@ function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = nu
       locale,
       guardAction,
       timeFormat,
+      style,
     }),
     getUsage: async () => usage,
     handoffExists: () => handoffExists,
+    shouldBlockStop,
     now: () => NOW,
   };
 }
@@ -38,14 +40,14 @@ test('--context: under threshold -> info, no guard directive', async () => {
 
 test('--context: breach -> guard directive present', async () => {
   const out = JSON.parse(await runCli('--context', '/proj', deps(BREACH)));
-  assert.match(out.hookSpecificOutput.additionalContext, /PŘEKROČEN PRÁH/);
+  assert.match(out.hookSpecificOutput.additionalContext, /THRESHOLD EXCEEDED/);
   assert.match(out.hookSpecificOutput.additionalContext, /\.claude\/RESUME\.md/);
 });
 
 test('--context: custom guardAction overrides built-in directive', async () => {
   const d = deps(BREACH, { guardAction: 'Zavolej manželce a vypni server.' });
   const out = JSON.parse(await runCli('--context', '/proj', d));
-  assert.match(out.hookSpecificOutput.additionalContext, /PŘEKROČEN PRÁH/);
+  assert.match(out.hookSpecificOutput.additionalContext, /THRESHOLD EXCEEDED/);
   assert.match(out.hookSpecificOutput.additionalContext, /Zavolej manželce a vypni server\./);
 });
 
@@ -93,4 +95,24 @@ test('--statusline: timeFormat 12 -> 12h same-day time', async () => {
                    seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
   const out = await runCli('--statusline', '/proj', deps(sample, { timeFormat: '12' }));
   assert.match(out.replace(/ /g, ' '), /5h 72% →5:00 AM/);
+});
+
+test('--statusline: authError -> key glyph', async () => {
+  const out = await runCli('--statusline', '/proj', deps({ authError: 'no-token' }));
+  assert.equal(out, '🔑 sign in');
+});
+
+test('--statusline: ascii style renders plain', async () => {
+  const out = await runCli('--statusline', '/proj', deps(SAMPLE, { style: 'ascii' }));
+  assert.match(out, /\[OK\] 5h 72% ->06:00 \| \[OK\] 7d 39% ->Wed/);
+});
+
+test('--context: czech locale keeps czech directive', async () => {
+  const out = JSON.parse(await runCli('--context', '/proj', deps(BREACH, { locale: 'cs-CZ' })));
+  assert.match(out.hookSpecificOutput.additionalContext, /PŘEKROČEN PRÁH/);
+});
+
+test('--stop: already blocked this window -> allow stop (no loop)', async () => {
+  const out = JSON.parse(await runCli('--stop', '/proj', deps(BREACH, { handoffExists: false, shouldBlockStop: () => false })));
+  assert.deepEqual(out, {});
 });

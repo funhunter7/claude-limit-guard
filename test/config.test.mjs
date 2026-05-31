@@ -79,3 +79,18 @@ test('loadConfig: invalid timeFormat falls back to system', () => {
   const readFile = () => JSON.stringify({ timeFormat: 'bogus' });
   assert.equal(loadConfig('/proj', readFile, noEnv).timeFormat, 'system');
 });
+
+test('loadConfig: style defaults to auto', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, noEnv).style, 'auto');
+});
+
+test('loadConfig: reads CLAUDE_PLUGIN_OPTION_STYLE', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_STYLE: 'ascii' }).style, 'ascii');
+});
+
+test('loadConfig: invalid style falls back to auto', () => {
+  const readFile = () => JSON.stringify({ style: 'fancy' });
+  assert.equal(loadConfig('/proj', readFile, noEnv).style, 'auto');
+});

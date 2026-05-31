@@ -135,3 +135,44 @@ test('formatStatusLine: hour12 true switches same-day time to 12h', () => {
   const out = formatStatusLine(sample, 95, ['five_hour'], now, 'en-US', true);
   assert.match(out.replace(/ /g, ' '), /🟢 5h 72% →5:00 PM/);
 });
+
+import { GLYPHS, resolveStyle } from '../lib/format.mjs';
+
+test('resolveStyle: explicit emoji/ascii', () => {
+  assert.equal(resolveStyle('emoji', {}, 'win32'), GLYPHS.emoji);
+  assert.equal(resolveStyle('ascii', {}, 'linux'), GLYPHS.ascii);
+});
+
+test('resolveStyle: auto on non-windows -> emoji', () => {
+  assert.equal(resolveStyle('auto', {}, 'linux'), GLYPHS.emoji);
+});
+
+test('resolveStyle: auto on windows conhost -> ascii', () => {
+  assert.equal(resolveStyle('auto', {}, 'win32'), GLYPHS.ascii);
+});
+
+test('resolveStyle: auto on windows terminal/vscode -> emoji', () => {
+  assert.equal(resolveStyle('auto', { WT_SESSION: '1' }, 'win32'), GLYPHS.emoji);
+  assert.equal(resolveStyle('auto', { TERM_PROGRAM: 'vscode' }, 'win32'), GLYPHS.emoji);
+});
+
+test('formatStatusLine: authError -> key glyph + localized sign-in', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  assert.equal(formatStatusLine({ authError: 'no-token' }, 95, ['five_hour'], now, 'en-US'), '🔑 sign in');
+  assert.equal(formatStatusLine({ authError: 'expired' }, 95, ['five_hour'], now, 'cs-CZ'), '🔑 přihlas se');
+});
+
+test('formatStatusLine: ascii glyphs render plain', () => {
+  const sample = { five_hour: { utilization: 72, resets_at: '2026-05-31T06:00:00+02:00' },
+                   seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  assert.equal(
+    formatStatusLine(sample, 95, ['five_hour', 'seven_day'], now, 'en-US', false, GLYPHS.ascii),
+    '[OK] 5h 72% ->06:00 | [OK] 7d 39% ->Wed'
+  );
+});
+
+test('formatStatusLine: ascii authError', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  assert.equal(formatStatusLine({ authError: 'no-token' }, 95, ['five_hour'], now, 'en-US', false, GLYPHS.ascii), '[!] sign in');
+});
