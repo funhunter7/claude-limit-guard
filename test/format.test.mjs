@@ -40,3 +40,33 @@ test('formatReset: missing/invalid -> empty string', () => {
   assert.equal(formatReset(null, now), '');
   assert.equal(formatReset('not-a-date', now), '');
 });
+
+import { formatLimit, formatStatusLine } from '../lib/format.mjs';
+import { readFileSync } from 'node:fs';
+
+const SAMPLE = JSON.parse(readFileSync(new URL('./fixtures/usage-sample.json', import.meta.url)));
+const NOW = new Date('2026-05-31T01:00:00+02:00');
+
+test('formatLimit: emoji + label + rounded pct + reset', () => {
+  assert.equal(formatLimit('5h', SAMPLE.five_hour, 95, NOW), '🟢 5h 72% →06:00');
+});
+
+test('formatLimit: unknown limit -> white placeholder', () => {
+  assert.equal(formatLimit('5h', null, 95, NOW), '⚪ 5h ?');
+  assert.equal(formatLimit('7d', { utilization: null }, 95, NOW), '⚪ 7d ?');
+});
+
+test('formatStatusLine: both limits joined by middot', () => {
+  assert.equal(
+    formatStatusLine(SAMPLE, 95, ['five_hour', 'seven_day'], NOW),
+    '🟢 5h 72% →06:00 · 🟢 7d 39% →st'
+  );
+});
+
+test('formatStatusLine: respects watch list', () => {
+  assert.equal(formatStatusLine(SAMPLE, 95, ['five_hour'], NOW), '🟢 5h 72% →06:00');
+});
+
+test('formatStatusLine: null usage -> placeholder', () => {
+  assert.equal(formatStatusLine(null, 95, ['five_hour', 'seven_day'], NOW), '⚪ limit ?');
+});
