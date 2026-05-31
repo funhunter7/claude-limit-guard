@@ -3,6 +3,7 @@
   "version": "0.2.0",
   "description": "Claude Code plugin that watches subscription usage limits and gracefully saves/resumes work at a threshold.",
   "type": "module",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "test": "node --test"
