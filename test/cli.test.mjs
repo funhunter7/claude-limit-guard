@@ -116,3 +116,11 @@ test('--stop: already blocked this window -> allow stop (no loop)', async () => 
   const out = JSON.parse(await runCli('--stop', '/proj', deps(BREACH, { handoffExists: false, shouldBlockStop: () => false })));
   assert.deepEqual(out, {});
 });
+
+test('--stop: window key is scoped to the project cwd', async () => {
+  let seen;
+  const sb = (k) => { seen = k; return true; };
+  await runCli('--stop', '/projA', deps(BREACH, { handoffExists: false, shouldBlockStop: sb }));
+  assert.match(seen, /^\/projA\|/);
+  assert.match(seen, /2026-05-31T06:00:00/); // includes the breached limit's reset time
+});
