@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { loadConfig as defaultLoadConfig } from '../lib/config.mjs';
 import { getUsage as defaultGetUsage } from '../lib/usage.mjs';
-import { formatStatusLine } from '../lib/format.mjs';
+import { formatStatusLine, resolveHour12 } from '../lib/format.mjs';
 import { breachedLimits } from '../lib/threshold.mjs';
 
 export async function runCli(mode, cwd, deps = {}) {
@@ -31,7 +31,8 @@ export async function runCli(mode, cwd, deps = {}) {
   }
 
   const usage = await getUsage();
-  const line = formatStatusLine(usage, cfg.threshold, cfg.watch, now(), cfg.locale);
+  const hour12 = resolveHour12(cfg.timeFormat);
+  const line = formatStatusLine(usage, cfg.threshold, cfg.watch, now(), cfg.locale, hour12);
 
   if (mode === '--statusline') return line;
 
