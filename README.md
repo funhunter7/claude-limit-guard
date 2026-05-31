@@ -35,6 +35,7 @@ The plugin exposes three settings you can change **directly in Claude Code** via
 | `locale` | string (BCP-47) | `en-US` | Language for the weekday in the status-line reset countdown, e.g. `cs-CZ`, `de-DE`, `ja-JP`. |
 | `guard_action` | string | `""` | What Claude should do when the threshold is reached. Leave empty to use the built-in save-and-handoff routine. |
 | `time_format` | string | `system` | Reset time format in the status line: `system` (follow OS), `12` (`→5:00 PM`), or `24` (`→17:00`). |
+| `style` | string | `auto` | Status-line glyphs: `auto` (detect terminal), `emoji`, or `ascii` (safe for legacy cmd/conhost). |
 
 ### Setting them
 - **`/config`** — pick the plugin and edit the values interactively (easiest).
@@ -75,6 +76,10 @@ Writes go through a validated helper that preserves your other settings.
 - **UserPromptSubmit / Stop hooks** inject the live limit; at/above the threshold they
   instruct Claude to run the guard routine.
 - **SessionStart hook** offers to resume from the handoff file after a reset.
+- **Localization & rendering:** messages follow `locale` (English default, Czech for
+  `cs-*`). On legacy Windows console (cmd/conhost) where colored emoji don't render,
+  `style: auto` falls back to ASCII (`[OK] 5h 72% ->06:00 | ...`). A missing/expired
+  token shows `🔑 sign in`.
 
 Usage data comes from `GET https://api.anthropic.com/api/oauth/usage` using your local
 OAuth token — same source as `/usage`. Cached ~45s.
