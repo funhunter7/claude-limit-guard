@@ -1,7 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { setProjectGuard, clearProjectGuard } from '../lib/guardConfig.mjs';
-import { setGlobalGuard, clearGlobalGuard, PLUGIN_KEY } from '../lib/guardConfig.mjs';
+import { setProjectGuard, clearProjectGuard, setGlobalGuard, clearGlobalGuard, PLUGIN_KEY } from '../lib/guardConfig.mjs';
 
 // In-memory fake fs: a Map of path -> contents.
 function fakeFs(initial = {}) {
