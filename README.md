@@ -24,9 +24,44 @@ Then add the status line to `~/.claude/settings.json`:
 ```
 (Use the absolute path to `bin/usage.mjs`. On macOS/Linux use a normal POSIX path.)
 
-## Per-project config
+## Configuration
+
+The plugin exposes three settings you can change **directly in Claude Code** via `/config`
+(under this plugin's options):
+
+| Option | Type | Default | Effect |
+|--------|------|---------|--------|
+| `threshold` | number | `95` | At or above this usage percentage the guard routine triggers. |
+| `locale` | string (BCP-47) | `en-US` | Language for the weekday in the status-line reset countdown, e.g. `cs-CZ`, `de-DE`, `ja-JP`. |
+| `guard_action` | string | `""` | What Claude should do when the threshold is reached. Leave empty to use the built-in save-and-handoff routine. |
+
+### Setting them
+- **`/config`** — pick the plugin and edit the values interactively (easiest).
+- **`~/.claude/settings.json`** — set them under `pluginConfigs` instead:
+  ```json
+  {
+    "pluginConfigs": {
+      "claude-limit-guard@claude-limit-guard": {
+        "threshold": 90,
+        "locale": "cs-CZ",
+        "guard_action": "Save a handoff to RESUME.md and stop."
+      }
+    }
+  }
+  ```
+  Claude Code passes these to the plugin as `CLAUDE_PLUGIN_OPTION_<KEY>` env vars.
+
+### Per-project override
 Drop `.claude/limit-guard.json` and `.claude/limit-guard.md` (copy from `templates/`)
-into any project to override the threshold and the guard routine for that project.
+into any project to override these settings for that project only.
+
+### Precedence (most specific wins)
+
+| Priority | Source |
+|----------|--------|
+| 1 (highest) | Per-project `.claude/limit-guard.json` |
+| 2 | `/config` option (a.k.a. `pluginConfigs` in `settings.json`) |
+| 3 (lowest) | Built-in default |
 
 ## How it works
 - **Status line** shows `🟢 5h 72% →06:00 · 🟢 7d 39% →Wed` (emoji = band, % always shown).
