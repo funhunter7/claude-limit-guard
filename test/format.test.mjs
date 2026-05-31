@@ -86,3 +86,21 @@ test('formatStatusLine: respects watch list', () => {
 test('formatStatusLine: null usage -> placeholder', () => {
   assert.equal(formatStatusLine(null, 95, ['five_hour', 'seven_day'], NOW), '⚪ limit ?');
 });
+
+import { resolveHour12 } from '../lib/format.mjs';
+
+test('resolveHour12: explicit 12 -> true, 24 -> false', () => {
+  assert.equal(resolveHour12('12'), true);
+  assert.equal(resolveHour12('24'), false);
+});
+
+test('resolveHour12: system uses injected detector', () => {
+  assert.equal(resolveHour12('system', () => 'h12'), true);
+  assert.equal(resolveHour12('system', () => 'h11'), true);
+  assert.equal(resolveHour12('system', () => 'h23'), false);
+  assert.equal(resolveHour12('system', () => 'h24'), false);
+});
+
+test('resolveHour12: unknown value treated as system', () => {
+  assert.equal(resolveHour12(undefined, () => 'h12'), true);
+});
