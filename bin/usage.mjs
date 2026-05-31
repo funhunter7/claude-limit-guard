@@ -52,7 +52,9 @@ export async function runCli(mode, cwd, deps = {}) {
 
   if (mode === '--stop') {
     if (breached.length && !hoExists) {
-      const windowKey = usage[breached[0]]?.resets_at || '';
+      // Scope the one-shot marker to this project so blocking in one project does not
+      // suppress the guard in another that breaches in the same reset window.
+      const windowKey = `${cwd}|${usage[breached[0]]?.resets_at || ''}`;
       if (!shouldBlockStop(windowKey)) return '{}';
       const action = cfg.guardAction || m.stopAction(cfg.handoff);
       return JSON.stringify({
