@@ -34,7 +34,12 @@ test('getUsage: fetch fails -> falls back to stale cache', async () => {
   assert.deepEqual(r, { five_hour: { utilization: 9 } });
 });
 
-test('getUsage: fetch fails, no stale -> null', async () => {
+test('getUsage: auth failure, no stale -> authError sentinel', async () => {
   const d = deps({ cache: null, fetchResult: { ok: false, reason: 'no-token' }, stale: null });
+  assert.deepEqual(await getUsage('/c', d), { authError: 'no-token' });
+});
+
+test('getUsage: network failure, no stale -> null', async () => {
+  const d = deps({ cache: null, fetchResult: { ok: false, reason: 'timeout' }, stale: null });
   assert.equal(await getUsage('/c', d), null);
 });
