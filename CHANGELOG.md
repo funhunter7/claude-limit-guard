@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.2
+
+- **Fix: duplicate hooks file on load.** `hooks/hooks.json` is auto-loaded by Claude Code
+  from its conventional path, so the explicit `"hooks": "./hooks/hooks.json"` in
+  `plugin.json` made the loader report a "Duplicate hooks file detected" error. Dropped the
+  redundant manifest field; the regression test now asserts the standard path is not
+  re-referenced. (Hooks themselves work as of 0.3.1.)
+
 ## 0.3.1
 
 - **Fix: hooks never loaded.** `hooks/hooks.json` listed the events at the top level, but
