@@ -8,11 +8,25 @@ runs a graceful save/handoff so work can resume after the limit resets.
 - Node.js ≥ 18 on PATH
 - Logged-in Claude Code (reads `~/.claude/.credentials.json`)
 
-## Install (local)
+## Install
+
+### From the marketplace (recommended)
+In Claude Code, add this repository as a marketplace and install the plugin:
+```
+/plugin marketplace add Funhunter7/claude-limit-guard
+/plugin install claude-limit-guard@claude-limit-guard
+```
+(`Funhunter7/claude-limit-guard` is the GitHub `owner/repo`; `claude-limit-guard@claude-limit-guard`
+is `plugin@marketplace`.) This auto-registers the hooks, the `/limit-guard-action` command,
+and the `/config` options. Update later with `/plugin marketplace update claude-limit-guard`.
+
+### Local development
 ```bash
 claude --plugin-dir /path/to/claude-limit-guard
 ```
-Then add the status line to `~/.claude/settings.json`:
+
+### Status line (manual, both methods)
+The status line is a user setting, so add it to `~/.claude/settings.json` yourself:
 ```json
 {
   "statusLine": {
