@@ -84,8 +84,13 @@ Writes go through a validated helper that preserves your other settings.
 | Priority | Source |
 |----------|--------|
 | 1 (highest) | Per-project `.claude/limit-guard.json` |
-| 2 | `/config` option (a.k.a. `pluginConfigs` in `settings.json`) |
-| 3 (lowest) | Built-in default |
+| 2 | `/config` option for hooks/commands (`CLAUDE_PLUGIN_OPTION_*`, injected by Claude Code) |
+| 3 | `/config` option read from `settings.json` `pluginConfigs` (covers the status line) |
+| 4 (lowest) | Built-in default |
+
+> The status line is a plain user setting, so Claude Code does not inject the option env
+> vars for it. The plugin therefore reads your `/config` options straight from
+> `settings.json`, so they apply to the status line too — not only to the hooks.
 
 ## How it works
 - **Status line** shows `🟢 5h 72% →06:00 · 🟢 7d 39% →Wed` (emoji = band, % always shown).
