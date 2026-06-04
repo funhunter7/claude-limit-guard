@@ -22,6 +22,20 @@ test('loadConfig: malformed JSON -> defaults', () => {
   assert.deepEqual(loadConfig('/proj', readFile, noEnv), DEFAULT_CONFIG);
 });
 
+test('loadConfig: malformed JSON triggers a debug log', () => {
+  const readFile = () => '{ not json';
+  const logged = [];
+  loadConfig('/proj', readFile, noEnv, (...a) => logged.push(a.join(' ')));
+  assert.ok(logged.some((l) => /limit-guard\.json/.test(l)), `expected a debug line about the bad file, got: ${JSON.stringify(logged)}`);
+});
+
+test('loadConfig: missing file does not debug-log (normal case)', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  const logged = [];
+  loadConfig('/proj', readThrows, noEnv, (...a) => logged.push(a.join(' ')));
+  assert.deepEqual(logged, []);
+});
+
 test('loadConfig: applies CLAUDE_PLUGIN_OPTION_* env options', () => {
   const readThrows = () => { throw new Error('ENOENT'); };
   const env = {
@@ -93,4 +107,42 @@ test('loadConfig: reads CLAUDE_PLUGIN_OPTION_STYLE', () => {
 test('loadConfig: invalid style falls back to auto', () => {
   const readFile = () => JSON.stringify({ style: 'fancy' });
   assert.equal(loadConfig('/proj', readFile, noEnv).style, 'auto');
+});
+
+test('loadConfig: warnBand defaults to 80', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, noEnv).warnBand, 80);
+});
+
+test('loadConfig: reads CLAUDE_PLUGIN_OPTION_WARN_BAND as number', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_WARN_BAND: '70' }).warnBand, 70);
+});
+
+test('loadConfig: invalid warn_band falls back to default', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_WARN_BAND: 'nope' }).warnBand, 80);
+});
+
+test('loadConfig: project warnBand overrides env', () => {
+  const readFile = () => JSON.stringify({ warnBand: 60 });
+  assert.equal(loadConfig('/proj', readFile, { CLAUDE_PLUGIN_OPTION_WARN_BAND: '70' }).warnBand, 60);
+});
+
+test('loadConfig: reads CLAUDE_PLUGIN_OPTION_WATCH csv -> trimmed array', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  const cfg = loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_WATCH: ' five_hour , seven_day ' });
+  assert.deepEqual(cfg.watch, ['five_hour', 'seven_day']);
+});
+
+test('loadConfig: blank watch entries are dropped', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  const cfg = loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_WATCH: 'five_hour,,' });
+  assert.deepEqual(cfg.watch, ['five_hour']);
+});
+
+test('loadConfig: project watch (array) overrides env csv', () => {
+  const readFile = () => JSON.stringify({ watch: ['seven_day'] });
+  const cfg = loadConfig('/proj', readFile, { CLAUDE_PLUGIN_OPTION_WATCH: 'five_hour,seven_day' });
+  assert.deepEqual(cfg.watch, ['seven_day']);
 });

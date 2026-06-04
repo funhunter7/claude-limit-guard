@@ -26,12 +26,14 @@ Then add the status line to `~/.claude/settings.json`:
 
 ## Configuration
 
-The plugin exposes three settings you can change **directly in Claude Code** via `/config`
+The plugin exposes these settings you can change **directly in Claude Code** via `/config`
 (under this plugin's options):
 
 | Option | Type | Default | Effect |
 |--------|------|---------|--------|
 | `threshold` | number | `95` | At or above this usage percentage the guard routine triggers. |
+| `warn_band` | number | `80` | At or above this percentage (but below `threshold`) the status line turns amber. |
+| `watch` | string (CSV) | `five_hour,seven_day` | Which limit windows to show/guard, comma-separated. |
 | `locale` | string (BCP-47) | `en-US` | Language for the weekday in the status-line reset countdown, e.g. `cs-CZ`, `de-DE`, `ja-JP`. |
 | `guard_action` | string | `""` | What Claude should do when the threshold is reached. Leave empty to use the built-in save-and-handoff routine. |
 | `time_format` | string | `system` | Reset time format in the status line: `system` (follow OS), `12` (`→5:00 PM`), or `24` (`→17:00`). |
@@ -83,3 +85,12 @@ Writes go through a validated helper that preserves your other settings.
 
 Usage data comes from `GET https://api.anthropic.com/api/oauth/usage` using your local
 OAuth token — same source as `/usage`. Cached ~45s.
+
+## Troubleshooting
+The status line and hooks stay silent on failure (so a network blip never breaks your
+prompt). Two environment variables help when the reading looks wrong:
+
+| Env var | Effect |
+|---------|--------|
+| `CLAUDE_LIMIT_GUARD_DEBUG=1` | Print fetch/cache/auth decisions to **stderr** (`[limit-guard] …`). Set anything other than ``/`0`/`false`/`no` to enable. |
+| `CLAUDE_LIMIT_GUARD_CC_VERSION` | Override the `claude-code/<version>` User-Agent sent to the usage endpoint, in case a pinned version is ever rejected. |
