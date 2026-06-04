@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1
+
+- **Fix: hooks never loaded.** `hooks/hooks.json` listed the events at the top level, but
+  Claude Code's plugin schema expects them nested under a top-level `hooks` record. The
+  `UserPromptSubmit`/`Stop`/`SessionStart` hooks now load instead of failing validation
+  on install. Added a `manifest.test.mjs` regression test for the manifest shape.
+
 ## 0.3.0
 
 - **Configurable warning band** — new `warn_band` option (default 80) sets the amber
