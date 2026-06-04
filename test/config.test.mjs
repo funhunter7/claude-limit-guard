@@ -217,6 +217,17 @@ test('loadConfig: global watch (csv string) and threshold (string) both coerce',
   assert.equal(cfg.threshold, 88);
 });
 
+test('loadConfig: blank/array numeric values in global options are treated as unset', () => {
+  for (const bad of ['', '   ', []]) {
+    const read = fakeRead({ settings: JSON.stringify({
+      pluginConfigs: { 'claude-limit-guard@claude-limit-guard': { options: { threshold: bad, warn_band: bad } } },
+    }) });
+    const cfg = loadConfig('/proj', read, GENV);
+    assert.equal(cfg.threshold, DEFAULT_CONFIG.threshold, `threshold for ${JSON.stringify(bad)}`);
+    assert.equal(cfg.warnBand, DEFAULT_CONFIG.warnBand, `warnBand for ${JSON.stringify(bad)}`);
+  }
+});
+
 test('loadConfig: null values in global options are treated as unset', () => {
   const read = fakeRead({ settings: JSON.stringify({
     pluginConfigs: { 'claude-limit-guard@claude-limit-guard': { options: { threshold: null, warn_band: null, watch: null, locale: null, style: null } } },
