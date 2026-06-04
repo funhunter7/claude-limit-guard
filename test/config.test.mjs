@@ -216,3 +216,15 @@ test('loadConfig: global watch (csv string) and threshold (string) both coerce',
   assert.deepEqual(cfg.watch, ['five_hour']);
   assert.equal(cfg.threshold, 88);
 });
+
+test('loadConfig: null values in global options are treated as unset', () => {
+  const read = fakeRead({ settings: JSON.stringify({
+    pluginConfigs: { 'claude-limit-guard@claude-limit-guard': { options: { threshold: null, warn_band: null, watch: null, locale: null, style: null } } },
+  }) });
+  const cfg = loadConfig('/proj', read, GENV);
+  assert.equal(cfg.threshold, DEFAULT_CONFIG.threshold);
+  assert.equal(cfg.warnBand, DEFAULT_CONFIG.warnBand);
+  assert.deepEqual(cfg.watch, DEFAULT_CONFIG.watch);
+  assert.equal(cfg.locale, DEFAULT_CONFIG.locale);
+  assert.equal(cfg.style, DEFAULT_CONFIG.style);
+});
