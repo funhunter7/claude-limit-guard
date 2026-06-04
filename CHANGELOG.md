@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0
+
+- **Status line honors `/config` options.** `loadConfig` now reads the plugin's options
+  from `~/.claude/settings.json` `pluginConfigs[...].options`, so the status line follows
+  your `threshold`, `locale`, `time_format`, `warn_band`, `watch`, and `style` settings —
+  previously those reached only the hooks (via env vars Claude Code injects) and the
+  status line fell back to defaults. New `lib/pluginSettings.mjs` holds the shared
+  settings-path/key logic; `null` option values are treated as unset.
+- **Fix: `/limit-guard-action` global writes.** `setGlobalGuard`/`clearGlobalGuard` now
+  read and write `guard_action` under `pluginConfigs[...].options` (where Claude Code's
+  `/config` stores it) instead of a flat key, clean up any legacy flat copy, and drop an
+  emptied `options` object.
+
 ## 0.3.2
 
 - **Fix: duplicate hooks file on load.** `hooks/hooks.json` is auto-loaded by Claude Code
