@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0
+
+- **Configurable warning band** — new `warn_band` option (default 80) sets the amber
+  threshold in the status line; previously hardcoded.
+- **Configurable watch list** — `watch` (comma-separated limit windows) is now exposed in
+  `/config`, not just the per-project JSON file.
+- **Debug logging** — `CLAUDE_LIMIT_GUARD_DEBUG=1` prints fetch/cache/auth decisions to
+  stderr to diagnose otherwise-silent status-line failures.
+- **Overridable User-Agent** — `CLAUDE_LIMIT_GUARD_CC_VERSION` overrides the pinned
+  `claude-code/<version>` User-Agent sent to the usage endpoint.
+- Internal: `parseCwd` extracted from the stdin entrypoint and unit-tested; handoff
+  existence is now checked lazily (only for `--resume-check`/`--stop`).
+
 ## 0.2.0
 
 - **Configurable time format** — new `time_format` option (`system`/`12`/`24`).
