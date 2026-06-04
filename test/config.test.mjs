@@ -146,3 +146,96 @@ test('loadConfig: project watch (array) overrides env csv', () => {
   const cfg = loadConfig('/proj', readFile, { CLAUDE_PLUGIN_OPTION_WATCH: 'five_hour,seven_day' });
   assert.deepEqual(cfg.watch, ['seven_day']);
 });
+
+// --- global settings.json pluginConfigs (status-line / non-hook path) ---
+
+const GENV = { CLAUDE_CONFIG_DIR: '/home/u/.claude' };
+
+// readFile stub that dispatches by filename, so path separators don't matter.
+function fakeRead(map) {
+  return (p) => {
+    const s = String(p);
+    if (s.endsWith('settings.json')) {
+      if (!('settings' in map)) { const e = new Error('ENOENT'); e.code = 'ENOENT'; throw e; }
+      return map.settings;
+    }
+    if (s.endsWith('limit-guard.json')) {
+      if (!('project' in map)) { const e = new Error('ENOENT'); e.code = 'ENOENT'; throw e; }
+      return map.project;
+    }
+    const e = new Error('ENOENT'); e.code = 'ENOENT'; throw e;
+  };
+}
+
+test('loadConfig: applies global pluginConfigs .options when env absent', () => {
+  const read = fakeRead({ settings: JSON.stringify({
+    pluginConfigs: { 'claude-limit-guard@claude-limit-guard': { options: { threshold: 90, locale: 'cs-CZ', time_format: '24' } } },
+  }) });
+  const cfg = loadConfig('/proj', read, GENV);
+  assert.equal(cfg.threshold, 90);
+  assert.equal(cfg.locale, 'cs-CZ');
+  assert.equal(cfg.timeFormat, '24');
+});
+
+test('loadConfig: env option beats global settings', () => {
+  const read = fakeRead({ settings: JSON.stringify({
+    pluginConfigs: { 'claude-limit-guard@claude-limit-guard': { options: { threshold: 90 } } },
+  }) });
+  const cfg = loadConfig('/proj', read, { ...GENV, CLAUDE_PLUGIN_OPTION_THRESHOLD: '70' });
+  assert.equal(cfg.threshold, 70);
+});
+
+test('loadConfig: project file beats global and env', () => {
+  const read = fakeRead({
+    settings: JSON.stringify({ pluginConfigs: { 'claude-limit-guard@claude-limit-guard': { options: { threshold: 90 } } } }),
+    project: JSON.stringify({ threshold: 50 }),
+  });
+  const cfg = loadConfig('/proj', read, { ...GENV, CLAUDE_PLUGIN_OPTION_THRESHOLD: '70' });
+  assert.equal(cfg.threshold, 50);
+});
+
+test('loadConfig: malformed global settings -> defaults, no throw', () => {
+  const read = fakeRead({ settings: '{ not json' });
+  const cfg = loadConfig('/proj', read, GENV);
+  assert.equal(cfg.threshold, DEFAULT_CONFIG.threshold);
+  assert.equal(cfg.locale, DEFAULT_CONFIG.locale);
+});
+
+test('loadConfig: legacy flat global option (no .options) is honored', () => {
+  const read = fakeRead({ settings: JSON.stringify({
+    pluginConfigs: { 'claude-limit-guard@claude-limit-guard': { locale: 'cs-CZ' } },
+  }) });
+  assert.equal(loadConfig('/proj', read, GENV).locale, 'cs-CZ');
+});
+
+test('loadConfig: global watch (csv string) and threshold (string) both coerce', () => {
+  const read = fakeRead({ settings: JSON.stringify({
+    pluginConfigs: { 'claude-limit-guard@claude-limit-guard': { options: { watch: 'five_hour', threshold: '88' } } },
+  }) });
+  const cfg = loadConfig('/proj', read, GENV);
+  assert.deepEqual(cfg.watch, ['five_hour']);
+  assert.equal(cfg.threshold, 88);
+});
+
+test('loadConfig: blank/array numeric values in global options are treated as unset', () => {
+  for (const bad of ['', '   ', []]) {
+    const read = fakeRead({ settings: JSON.stringify({
+      pluginConfigs: { 'claude-limit-guard@claude-limit-guard': { options: { threshold: bad, warn_band: bad } } },
+    }) });
+    const cfg = loadConfig('/proj', read, GENV);
+    assert.equal(cfg.threshold, DEFAULT_CONFIG.threshold, `threshold for ${JSON.stringify(bad)}`);
+    assert.equal(cfg.warnBand, DEFAULT_CONFIG.warnBand, `warnBand for ${JSON.stringify(bad)}`);
+  }
+});
+
+test('loadConfig: null values in global options are treated as unset', () => {
+  const read = fakeRead({ settings: JSON.stringify({
+    pluginConfigs: { 'claude-limit-guard@claude-limit-guard': { options: { threshold: null, warn_band: null, watch: null, locale: null, style: null } } },
+  }) });
+  const cfg = loadConfig('/proj', read, GENV);
+  assert.equal(cfg.threshold, DEFAULT_CONFIG.threshold);
+  assert.equal(cfg.warnBand, DEFAULT_CONFIG.warnBand);
+  assert.deepEqual(cfg.watch, DEFAULT_CONFIG.watch);
+  assert.equal(cfg.locale, DEFAULT_CONFIG.locale);
+  assert.equal(cfg.style, DEFAULT_CONFIG.style);
+});
