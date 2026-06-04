@@ -22,6 +22,12 @@ test('bandEmoji: unknown utilization -> white', () => {
   assert.equal(bandEmoji(undefined, 95), '⚪');
 });
 
+test('bandEmoji: custom warnBand moves the amber threshold', () => {
+  // warnBand 60: 59 still green, 60 already amber
+  assert.equal(bandEmoji(59, 95, GLYPHS.emoji, 60), '🟢');
+  assert.equal(bandEmoji(60, 95, GLYPHS.emoji, 60), '🟡');
+});
+
 import { formatReset } from '../lib/format.mjs';
 
 test('formatReset: same local day -> arrow + HH:MM', () => {

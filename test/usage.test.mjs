@@ -43,3 +43,11 @@ test('getUsage: network failure, no stale -> null', async () => {
   const d = deps({ cache: null, fetchResult: { ok: false, reason: 'timeout' }, stale: null });
   assert.equal(await getUsage('/c', d), null);
 });
+
+test('getUsage: injected debug receives the fetch outcome', async () => {
+  const logged = [];
+  const d = deps({ cache: null, fetchResult: { ok: false, reason: 'expired' }, stale: null });
+  d.debug = (...args) => logged.push(args.join(' '));
+  await getUsage('/c', d);
+  assert.ok(logged.some((l) => l.includes('expired')), `expected a debug line mentioning the reason, got: ${JSON.stringify(logged)}`);
+});

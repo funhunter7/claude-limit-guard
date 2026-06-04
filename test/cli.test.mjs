@@ -1,6 +1,27 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { runCli } from '../bin/usage.mjs';
+import { runCli, parseCwd } from '../bin/usage.mjs';
+
+test('parseCwd: workspace.current_dir wins over cwd', () => {
+  const raw = JSON.stringify({ workspace: { current_dir: '/ws' }, cwd: '/other' });
+  assert.equal(parseCwd(raw, '/fb'), '/ws');
+});
+
+test('parseCwd: falls back to cwd field when no workspace', () => {
+  assert.equal(parseCwd(JSON.stringify({ cwd: '/here' }), '/fb'), '/here');
+});
+
+test('parseCwd: neither field -> fallback', () => {
+  assert.equal(parseCwd(JSON.stringify({ unrelated: 1 }), '/fb'), '/fb');
+});
+
+test('parseCwd: invalid JSON -> fallback', () => {
+  assert.equal(parseCwd('{ not json', '/fb'), '/fb');
+});
+
+test('parseCwd: empty input -> fallback', () => {
+  assert.equal(parseCwd('', '/fb'), '/fb');
+});
 
 const SAMPLE = { five_hour: { utilization: 72, resets_at: '2026-05-31T06:00:00+02:00' },
                  seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
