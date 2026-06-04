@@ -101,6 +101,16 @@ test('clearGlobalGuard: also removes a legacy flat guard_action', () => {
   const obj = JSON.parse(fs.files.get(path));
   assert.equal(obj.pluginConfigs[PLUGIN_KEY].guard_action, undefined);
   assert.equal(obj.pluginConfigs[PLUGIN_KEY].threshold, 90);
+  assert.equal(obj.pluginConfigs[PLUGIN_KEY].options, undefined);
+});
+
+test('clearGlobalGuard: removes an emptied .options object', () => {
+  const fs = fakeFs();
+  const path = setGlobalGuard('x', { ...fs, env: ENV });
+  fs.files.set(path, JSON.stringify({ pluginConfigs: { [PLUGIN_KEY]: { options: { guard_action: 'x' } } } }));
+  clearGlobalGuard({ ...fs, env: ENV });
+  const obj = JSON.parse(fs.files.get(path));
+  assert.equal(obj.pluginConfigs[PLUGIN_KEY].options, undefined);
 });
 
 test('clearGlobalGuard: no file -> no throw', () => {
