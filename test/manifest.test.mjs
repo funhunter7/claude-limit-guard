@@ -34,9 +34,15 @@ test('hooks.json: every event is known and maps to an array of matcher groups', 
   }
 });
 
-test('plugin.json: hooks field points at hooks/hooks.json', () => {
+test('plugin.json: does not re-reference the auto-loaded hooks/hooks.json', () => {
+  // Claude Code auto-loads the conventional hooks/hooks.json; referencing it again
+  // in manifest.hooks makes the loader report a "Duplicate hooks file" error.
   const plugin = readJson('.claude-plugin/plugin.json');
-  assert.equal(plugin.hooks, './hooks/hooks.json');
+  const ref = typeof plugin.hooks === 'string' ? [plugin.hooks] : (plugin.hooks ?? []);
+  for (const p of ref) {
+    assert.notMatch(p, /(^\.\/)?hooks\/hooks\.json$/,
+      'remove ./hooks/hooks.json from manifest.hooks — it loads automatically');
+  }
 });
 
 test('plugin.json and package.json versions agree', () => {
