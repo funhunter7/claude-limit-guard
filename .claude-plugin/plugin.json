@@ -2,7 +2,7 @@
   "name": "claude-limit-guard",
   "version": "0.3.0",
   "description": "Watches Claude subscription usage limits; shows them in the status line, injects them into context, and gracefully saves/resumes work at a configurable threshold.",
-  "author": { "name": "filka" },
+  "author": { "name": "funhunter7" },
   "hooks": "./hooks/hooks.json",
   "userConfig": {
     "threshold": {

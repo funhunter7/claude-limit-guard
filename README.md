@@ -13,10 +13,10 @@ runs a graceful save/handoff so work can resume after the limit resets.
 ### From the marketplace (recommended)
 In Claude Code, add this repository as a marketplace and install the plugin:
 ```
-/plugin marketplace add Funhunter7/claude-limit-guard
+/plugin marketplace add funhunter7/claude-limit-guard
 /plugin install claude-limit-guard@claude-limit-guard
 ```
-(`Funhunter7/claude-limit-guard` is the GitHub `owner/repo`; `claude-limit-guard@claude-limit-guard`
+(`funhunter7/claude-limit-guard` is the GitHub `owner/repo`; `claude-limit-guard@claude-limit-guard`
 is `plugin@marketplace`.) This auto-registers the hooks, the `/limit-guard-action` command,
 and the `/config` options. Update later with `/plugin marketplace update claude-limit-guard`.
 
