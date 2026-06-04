@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { PLUGIN_KEY, globalSettingsPath, resolveGlobalKey, readGlobalOptions } from '../lib/pluginSettings.mjs';
 
 const ENV = { CLAUDE_CONFIG_DIR: '/home/u/.claude' };
-const readFrom = (raw) => () => {
+const readFrom = (raw) => (_path, _enc) => {
   if (raw === undefined) { const e = new Error('ENOENT'); e.code = 'ENOENT'; throw e; }
   return raw;
 };
@@ -27,6 +27,11 @@ test('resolveGlobalKey: existing claude-limit-guard@* key', () => {
 
 test('resolveGlobalKey: default when nothing matches', () => {
   assert.equal(resolveGlobalKey({}, {}), PLUGIN_KEY);
+});
+
+test('resolveGlobalKey: env override wins over an existing matching key', () => {
+  const settings = { pluginConfigs: { 'claude-limit-guard@mk': {} } };
+  assert.equal(resolveGlobalKey(settings, { CLAUDE_LIMIT_GUARD_PLUGIN_KEY: 'foo@bar' }), 'foo@bar');
 });
 
 test('readGlobalOptions: missing file -> {}', () => {
@@ -57,4 +62,10 @@ test('readGlobalOptions: legacy flat option (no .options) is returned', () => {
 
 test('readGlobalOptions: no pluginConfigs -> {}', () => {
   assert.deepEqual(readGlobalOptions(ENV, readFrom(JSON.stringify({ theme: 'dark' }))), {});
+});
+
+test('readGlobalOptions: reads options under the env-overridden key', () => {
+  const raw = JSON.stringify({ pluginConfigs: { 'other@key': { options: { locale: 'cs-CZ' } } } });
+  const out = readGlobalOptions({ ...ENV, CLAUDE_LIMIT_GUARD_PLUGIN_KEY: 'other@key' }, readFrom(raw));
+  assert.deepEqual(out, { locale: 'cs-CZ' });
 });
