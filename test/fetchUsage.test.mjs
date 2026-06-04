@@ -1,12 +1,24 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { usageHeaders, fetchUsage } from '../lib/fetchUsage.mjs';
+import { usageHeaders, fetchUsage, resolveCcVersion } from '../lib/fetchUsage.mjs';
 
 test('usageHeaders: required auth + beta + UA headers', () => {
   const h = usageHeaders('tok');
   assert.equal(h.Authorization, 'Bearer tok');
   assert.equal(h['anthropic-beta'], 'oauth-2025-04-20');
   assert.match(h['User-Agent'], /^claude-code\//);
+});
+
+test('resolveCcVersion: falls back to the built-in default when unset', () => {
+  assert.match(resolveCcVersion({}), /^\d+\.\d+\.\d+$/);
+});
+
+test('resolveCcVersion: honors CLAUDE_LIMIT_GUARD_CC_VERSION', () => {
+  assert.equal(resolveCcVersion({ CLAUDE_LIMIT_GUARD_CC_VERSION: '9.9.9' }), '9.9.9');
+});
+
+test('usageHeaders: uses an explicitly provided cc version', () => {
+  assert.equal(usageHeaders('tok', '9.9.9')['User-Agent'], 'claude-code/9.9.9');
 });
 
 test('fetchUsage: no token -> reason no-token', async () => {

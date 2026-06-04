@@ -19,11 +19,12 @@ export async function runCli(mode, cwd, deps = {}) {
 
   const cfg = loadConfig(cwd);
   const m = getMessages(cfg.locale);
-  const handoffPath = join(cwd, cfg.handoff);
-  const hoExists = handoffExists ? handoffExists() : existsSync(handoffPath);
+  // Only --resume-check and --stop care whether a handoff already exists; compute lazily
+  // so the per-keystroke --statusline/--context paths skip the filesystem stat.
+  const hoExists = () => (handoffExists ? handoffExists() : existsSync(join(cwd, cfg.handoff)));
 
   if (mode === '--resume-check') {
-    if (!hoExists) return '{}';
+    if (!hoExists()) return '{}';
     return JSON.stringify({
       hookSpecificOutput: {
         hookEventName: 'SessionStart',
@@ -35,7 +36,7 @@ export async function runCli(mode, cwd, deps = {}) {
   const usage = await getUsage();
   const glyphs = resolveStyle(cfg.style);
   const hour12 = resolveHour12(cfg.timeFormat);
-  const line = formatStatusLine(usage, cfg.threshold, cfg.watch, now(), cfg.locale, hour12, glyphs);
+  const line = formatStatusLine(usage, cfg.threshold, cfg.watch, now(), cfg.locale, hour12, glyphs, cfg.warnBand);
 
   if (mode === '--statusline') return line;
 
@@ -51,7 +52,7 @@ export async function runCli(mode, cwd, deps = {}) {
   }
 
   if (mode === '--stop') {
-    if (breached.length && !hoExists) {
+    if (breached.length && !hoExists()) {
       // Scope the one-shot marker to this project so blocking in one project does not
       // suppress the guard in another that breaches in the same reset window.
       const windowKey = `${cwd}|${usage[breached[0]]?.resets_at || ''}`;
@@ -68,13 +69,23 @@ export async function runCli(mode, cwd, deps = {}) {
   return '{}';
 }
 
-// ---- real entrypoint (not exercised by unit tests) ----
+// Extract the working directory from a Claude Code hook payload (JSON on stdin),
+// preferring workspace.current_dir over a top-level cwd. Returns `fallback` on any
+// missing field or malformed input. Pure/testable; the fd-0 read lives in the caller.
+export function parseCwd(raw, fallback) {
+  try {
+    const j = JSON.parse(raw);
+    return j?.workspace?.current_dir || j?.cwd || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+// ---- real entrypoint (the fd-0 read itself is not exercised by unit tests) ----
 function readCwdFromStdin() {
   if (process.stdin.isTTY) return process.cwd(); // no piped hook payload to read
   try {
-    const raw = readFileSync(0, 'utf8'); // fd 0 = stdin
-    const j = JSON.parse(raw);
-    return j?.workspace?.current_dir || j?.cwd || process.cwd();
+    return parseCwd(readFileSync(0, 'utf8'), process.cwd()); // fd 0 = stdin
   } catch {
     return process.cwd();
   }
