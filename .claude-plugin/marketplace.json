@@ -1,6 +1,6 @@
 {
   "name": "claude-limit-guard",
-  "owner": { "name": "filka" },
+  "owner": { "name": "funhunter7" },
   "plugins": [
     {
       "name": "claude-limit-guard",
