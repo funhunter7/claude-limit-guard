@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { runCli, parseCwd } from '../bin/usage.mjs';
+import { runCli, parseCwd, parseStdin } from '../bin/usage.mjs';
 
 test('parseCwd: workspace.current_dir wins over cwd', () => {
   const raw = JSON.stringify({ workspace: { current_dir: '/ws' }, cwd: '/other' });
@@ -21,6 +21,26 @@ test('parseCwd: invalid JSON -> fallback', () => {
 
 test('parseCwd: empty input -> fallback', () => {
   assert.equal(parseCwd('', '/fb'), '/fb');
+});
+
+test('parseStdin: extracts cwd and rate_limits together', () => {
+  const raw = JSON.stringify({
+    workspace: { current_dir: '/ws' },
+    rate_limits: { five_hour: { used_percentage: 12, resets_at: 1738425600 } },
+  });
+  assert.deepEqual(parseStdin(raw, '/fb'), {
+    cwd: '/ws',
+    rateLimits: { five_hour: { used_percentage: 12, resets_at: 1738425600 } },
+  });
+});
+
+test('parseStdin: no rate_limits -> rateLimits undefined, cwd resolved', () => {
+  assert.deepEqual(parseStdin(JSON.stringify({ cwd: '/here' }), '/fb'),
+    { cwd: '/here', rateLimits: undefined });
+});
+
+test('parseStdin: invalid JSON -> fallback cwd, undefined rateLimits', () => {
+  assert.deepEqual(parseStdin('{ not json', '/fb'), { cwd: '/fb', rateLimits: undefined });
 });
 
 const SAMPLE = { five_hour: { utilization: 72, resets_at: '2026-05-31T06:00:00+02:00' },
