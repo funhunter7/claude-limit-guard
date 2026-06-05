@@ -102,8 +102,12 @@ Writes go through a validated helper that preserves your other settings.
   `style: auto` falls back to ASCII (`[OK] 5h 72% ->06:00 | ...`). A missing/expired
   token shows `🔑 sign in`.
 
-Usage data comes from `GET https://api.anthropic.com/api/oauth/usage` using your local
-OAuth token — same source as `/usage`. Cached ~45s.
+The status line reads rate-limit usage from the native `rate_limits` data Claude Code
+passes on stdin (Pro/Max, after the first API response), so the per-keystroke path makes
+no network call. It falls back to `GET https://api.anthropic.com/api/oauth/usage` (your
+local OAuth token — same source as `/usage`) when that data is unavailable (API-key
+sessions, before the first response, older Claude Code). Hooks always use the OAuth
+endpoint but read the ~45s cache the status line keeps warm.
 
 ## Troubleshooting
 The status line and hooks stay silent on failure (so a network blip never breaks your
