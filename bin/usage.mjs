@@ -2,7 +2,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { loadConfig as defaultLoadConfig } from '../lib/config.mjs';
-import { getUsage as defaultGetUsage } from '../lib/usage.mjs';
+import { getUsage as defaultGetUsage, CACHE_PATH } from '../lib/usage.mjs';
+import { writeCache as defaultWriteCache } from '../lib/cache.mjs';
+import { coversWatched, usageFromRateLimits } from '../lib/stdinUsage.mjs';
 import { formatStatusLine, resolveHour12, resolveStyle } from '../lib/format.mjs';
 import { breachedLimits } from '../lib/threshold.mjs';
 import { getMessages } from '../lib/messages.mjs';
@@ -15,6 +17,9 @@ export async function runCli(mode, cwd, deps = {}) {
     handoffExists,
     shouldBlockStop = defaultShouldBlockStop,
     now = () => new Date(),
+    stdinUsage = null,
+    writeCache = defaultWriteCache,
+    cachePath = CACHE_PATH,
   } = deps;
 
   const cfg = loadConfig(cwd);
@@ -33,7 +38,17 @@ export async function runCli(mode, cwd, deps = {}) {
     });
   }
 
-  const usage = await getUsage();
+  // Hot path: the --statusline invocation receives native rate_limits on stdin. When the
+  // mapped data covers every watched window, use it directly (no network) and write it
+  // through to the shared cache so the hooks (--stop/--context) read warm data too.
+  // Any gap (absent/garbage window, API-key user, pre-first-response) falls back to getUsage().
+  let usage;
+  if (mode === '--statusline' && coversWatched(stdinUsage, cfg.watch)) {
+    writeCache(cachePath, stdinUsage);
+    usage = stdinUsage;
+  } else {
+    usage = await getUsage();
+  }
   const glyphs = resolveStyle(cfg.style);
   const hour12 = resolveHour12(cfg.timeFormat);
   const line = formatStatusLine(usage, cfg.threshold, cfg.watch, now(), cfg.locale, hour12, glyphs, cfg.warnBand);
@@ -89,19 +104,20 @@ export function parseCwd(raw, fallback) {
 }
 
 // ---- real entrypoint (the fd-0 read itself is not exercised by unit tests) ----
-function readCwdFromStdin() {
-  if (process.stdin.isTTY) return process.cwd(); // no piped hook payload to read
+function readStdin() {
+  if (process.stdin.isTTY) return { cwd: process.cwd(), rateLimits: undefined };
   try {
-    return parseCwd(readFileSync(0, 'utf8'), process.cwd()); // fd 0 = stdin
+    return parseStdin(readFileSync(0, 'utf8'), process.cwd()); // fd 0 = stdin
   } catch {
-    return process.cwd();
+    return { cwd: process.cwd(), rateLimits: undefined };
   }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const mode = process.argv[2] || '--statusline';
-  const cwd = readCwdFromStdin();
-  runCli(mode, cwd)
+  const { cwd, rateLimits } = readStdin();
+  const stdinUsage = usageFromRateLimits(rateLimits);
+  runCli(mode, cwd, { stdinUsage })
     .then((out) => process.stdout.write(out))
     .catch(() => process.stdout.write(mode === '--statusline' ? 'limit ?' : '{}'));
 }
