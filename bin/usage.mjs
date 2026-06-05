@@ -17,6 +17,8 @@ export async function runCli(mode, cwd, deps = {}) {
     handoffExists,
     shouldBlockStop = defaultShouldBlockStop,
     now = () => new Date(),
+    // Already mapped to the internal usage shape via usageFromRateLimits — NOT the raw
+    // rate_limits block. Passing raw rate_limits here would silently miss the fast-path.
     stdinUsage = null,
     writeCache = defaultWriteCache,
     cachePath = CACHE_PATH,

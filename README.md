@@ -106,8 +106,9 @@ The status line reads rate-limit usage from the native `rate_limits` data Claude
 passes on stdin (Pro/Max, after the first API response), so the per-keystroke path makes
 no network call. It falls back to `GET https://api.anthropic.com/api/oauth/usage` (your
 local OAuth token — same source as `/usage`) when that data is unavailable (API-key
-sessions, before the first response, older Claude Code). Hooks always use the OAuth
-endpoint but read the ~45s cache the status line keeps warm.
+sessions, before the first response, older Claude Code). Hooks always call `getUsage()`,
+which reads the same ~45s cache the status line keeps warm — so they hit the OAuth
+endpoint only when that cache is cold.
 
 ## Troubleshooting
 The status line and hooks stay silent on failure (so a network blip never breaks your
