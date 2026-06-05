@@ -69,16 +69,23 @@ export async function runCli(mode, cwd, deps = {}) {
   return '{}';
 }
 
-// Extract the working directory from a Claude Code hook payload (JSON on stdin),
-// preferring workspace.current_dir over a top-level cwd. Returns `fallback` on any
-// missing field or malformed input. Pure/testable; the fd-0 read lives in the caller.
-export function parseCwd(raw, fallback) {
+// Parse a Claude Code stdin payload once, extracting both the working directory and the
+// native rate_limits block. Returns safe defaults on missing fields or malformed input.
+export function parseStdin(raw, fallback) {
   try {
     const j = JSON.parse(raw);
-    return j?.workspace?.current_dir || j?.cwd || fallback;
+    return {
+      cwd: j?.workspace?.current_dir || j?.cwd || fallback,
+      rateLimits: j?.rate_limits,
+    };
   } catch {
-    return fallback;
+    return { cwd: fallback, rateLimits: undefined };
   }
+}
+
+// Back-compat thin wrapper: the cwd-only extraction used by callers that don't need limits.
+export function parseCwd(raw, fallback) {
+  return parseStdin(raw, fallback).cwd;
 }
 
 // ---- real entrypoint (the fd-0 read itself is not exercised by unit tests) ----
