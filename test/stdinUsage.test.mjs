@@ -54,4 +54,9 @@ test('coversWatched: true only when every watched window has a finite utilizatio
   assert.equal(coversWatched({ five_hour: { utilization: NaN } }, ['five_hour']), false);
   assert.equal(coversWatched({ five_hour: { utilization: 10 } }, ['five_hour', 'seven_day']), false);
   assert.equal(coversWatched(null, ['five_hour']), false);
-});;
+});
+
+test('used_percentage at the 100 boundary is valid', () => {
+  assert.deepEqual(usageFromRateLimits({ five_hour: { used_percentage: 100 } }),
+    { five_hour: { utilization: 100 } });
+});

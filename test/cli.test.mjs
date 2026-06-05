@@ -211,4 +211,4 @@ test('--context: ignores stdinUsage, always uses getUsage', async () => {
   await runCli('--context', '/proj', deps(SAMPLE, { stdinUsage: STDIN_FULL, calls }));
   assert.equal(calls.getUsage, 1);
   assert.equal(calls.wrote, null);
-});;
+});
