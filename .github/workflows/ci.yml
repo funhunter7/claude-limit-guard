@@ -8,6 +8,11 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # The status-line/format tests assert wall-clock time formatting against fixtures
+    # written with +02:00 offsets. Pin the timezone so they are deterministic on the
+    # UTC runner (and match a local run in CET/CEST). See test/format.test.mjs.
+    env:
+      TZ: Europe/Prague
     strategy:
       matrix:
         node: [18, 20, 22]
