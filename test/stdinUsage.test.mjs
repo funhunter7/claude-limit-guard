@@ -47,9 +47,11 @@ test('missing window is omitted; empty/null/undefined input -> null', () => {
   assert.equal(usageFromRateLimits(undefined), null);
 });
 
-test('coversWatched: true only when every watched window has a numeric utilization', () => {
+test('coversWatched: true only when every watched window has a finite utilization', () => {
   const both = { five_hour: { utilization: 10 }, seven_day: { utilization: 20 } };
   assert.equal(coversWatched(both, ['five_hour', 'seven_day']), true);
+  assert.equal(coversWatched({ five_hour: { utilization: 0 } }, ['five_hour']), true);
+  assert.equal(coversWatched({ five_hour: { utilization: NaN } }, ['five_hour']), false);
   assert.equal(coversWatched({ five_hour: { utilization: 10 } }, ['five_hour', 'seven_day']), false);
   assert.equal(coversWatched(null, ['five_hour']), false);
-});
+});;
