@@ -44,8 +44,8 @@ export async function runCli(mode, cwd, deps = {}) {
   // Any gap (absent/garbage window, API-key user, pre-first-response) falls back to getUsage().
   let usage;
   if (mode === '--statusline' && coversWatched(stdinUsage, cfg.watch)) {
-    writeCache(cachePath, stdinUsage);
     usage = stdinUsage;
+    writeCache(cachePath, stdinUsage); // fire-and-forget; the real writeCache never throws
   } else {
     usage = await getUsage();
   }
