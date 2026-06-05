@@ -171,6 +171,7 @@ test('--stop: window key is scoped to the project cwd', async () => {
   assert.match(seen, /2026-05-31T06:00:00/); // includes the breached limit's reset time
 });
 
+// Shape produced by usageFromRateLimits: utilization + resets_at as ms timestamps (not ISO strings).
 const STDIN_FULL = { five_hour: { utilization: 72, resets_at: Date.parse('2026-05-31T06:00:00+02:00') },
                      seven_day: { utilization: 39, resets_at: Date.parse('2026-06-03T10:00:00+02:00') } };
 
@@ -210,4 +211,4 @@ test('--context: ignores stdinUsage, always uses getUsage', async () => {
   await runCli('--context', '/proj', deps(SAMPLE, { stdinUsage: STDIN_FULL, calls }));
   assert.equal(calls.getUsage, 1);
   assert.equal(calls.wrote, null);
-});
+});;
