@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { runCli, parseCwd } from '../bin/usage.mjs';
+import { runCli, parseCwd, parseStdin } from '../bin/usage.mjs';
 
 test('parseCwd: workspace.current_dir wins over cwd', () => {
   const raw = JSON.stringify({ workspace: { current_dir: '/ws' }, cwd: '/other' });
@@ -23,13 +23,35 @@ test('parseCwd: empty input -> fallback', () => {
   assert.equal(parseCwd('', '/fb'), '/fb');
 });
 
+test('parseStdin: extracts cwd and rate_limits together', () => {
+  const raw = JSON.stringify({
+    workspace: { current_dir: '/ws' },
+    rate_limits: { five_hour: { used_percentage: 12, resets_at: 1738425600 } },
+  });
+  assert.deepEqual(parseStdin(raw, '/fb'), {
+    cwd: '/ws',
+    rateLimits: { five_hour: { used_percentage: 12, resets_at: 1738425600 } },
+  });
+});
+
+test('parseStdin: no rate_limits -> rateLimits undefined, cwd resolved', () => {
+  assert.deepEqual(parseStdin(JSON.stringify({ cwd: '/here' }), '/fb'),
+    { cwd: '/here', rateLimits: undefined });
+});
+
+test('parseStdin: invalid JSON -> fallback cwd, undefined rateLimits', () => {
+  assert.deepEqual(parseStdin('{ not json', '/fb'), { cwd: '/fb', rateLimits: undefined });
+});
+
 const SAMPLE = { five_hour: { utilization: 72, resets_at: '2026-05-31T06:00:00+02:00' },
                  seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
 const BREACH = { five_hour: { utilization: 96, resets_at: '2026-05-31T06:00:00+02:00' },
                  seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
 const NOW = new Date('2026-05-31T01:00:00+02:00');
 
-function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null, timeFormat = '24', style = 'emoji', shouldBlockStop = () => true } = {}) {
+function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null, timeFormat = '24', style = 'emoji', shouldBlockStop = () => true, stdinUsage = null, calls = {} } = {}) {
+  calls.getUsage = 0;
+  calls.wrote = null;
   return {
     loadConfig: () => ({
       threshold: 95,
@@ -40,10 +62,13 @@ function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = nu
       timeFormat,
       style,
     }),
-    getUsage: async () => usage,
+    getUsage: async () => { calls.getUsage += 1; return usage; },
     handoffExists: () => handoffExists,
     shouldBlockStop,
     now: () => NOW,
+    stdinUsage,
+    writeCache: (_p, data) => { calls.wrote = data; return true; },
+    cachePath: '/tmp/test-cache.json',
   };
 }
 
@@ -144,4 +169,46 @@ test('--stop: window key is scoped to the project cwd', async () => {
   await runCli('--stop', '/projA', deps(BREACH, { handoffExists: false, shouldBlockStop: sb }));
   assert.match(seen, /^\/projA\|/);
   assert.match(seen, /2026-05-31T06:00:00/); // includes the breached limit's reset time
+});
+
+// Shape produced by usageFromRateLimits: utilization + resets_at as ms timestamps (not ISO strings).
+const STDIN_FULL = { five_hour: { utilization: 72, resets_at: Date.parse('2026-05-31T06:00:00+02:00') },
+                     seven_day: { utilization: 39, resets_at: Date.parse('2026-06-03T10:00:00+02:00') } };
+
+test('--statusline: complete stdinUsage -> formats from stdin, writes cache, no getUsage', async () => {
+  const calls = {};
+  const out = await runCli('--statusline', '/proj', deps(undefined, { stdinUsage: STDIN_FULL, calls }));
+  assert.equal(out, '🟢 5h 72% →06:00 · 🟢 7d 39% →Wed');
+  assert.equal(calls.getUsage, 0);
+  assert.deepEqual(calls.wrote, STDIN_FULL);
+});
+
+test('--statusline: partial stdinUsage -> falls back to getUsage, no cache write', async () => {
+  const calls = {};
+  const partial = { five_hour: { utilization: 72, resets_at: Date.parse('2026-05-31T06:00:00+02:00') } };
+  const out = await runCli('--statusline', '/proj', deps(SAMPLE, { stdinUsage: partial, calls }));
+  assert.equal(out, '🟢 5h 72% →06:00 · 🟢 7d 39% →Wed');
+  assert.equal(calls.getUsage, 1);
+  assert.equal(calls.wrote, null);
+});
+
+test('--statusline: no stdinUsage -> getUsage path (today behavior)', async () => {
+  const calls = {};
+  await runCli('--statusline', '/proj', deps(SAMPLE, { stdinUsage: null, calls }));
+  assert.equal(calls.getUsage, 1);
+  assert.equal(calls.wrote, null);
+});
+
+test('--stop: ignores stdinUsage, always uses getUsage', async () => {
+  const calls = {};
+  await runCli('--stop', '/proj', deps(BREACH, { handoffExists: false, stdinUsage: STDIN_FULL, calls }));
+  assert.equal(calls.getUsage, 1);
+  assert.equal(calls.wrote, null);
+});
+
+test('--context: ignores stdinUsage, always uses getUsage', async () => {
+  const calls = {};
+  await runCli('--context', '/proj', deps(SAMPLE, { stdinUsage: STDIN_FULL, calls }));
+  assert.equal(calls.getUsage, 1);
+  assert.equal(calls.wrote, null);
 });
