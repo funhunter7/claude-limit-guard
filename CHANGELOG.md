@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.7.0 — 2026-06-06
+
+- **Compact label style.** New `label_style` option (`full` | `short`, default `full`). With
+  `short`, window labels render as `5h` / `7d` instead of the full localized words — a
+  pressure valve for status-line length. Wired through `messages.mjs` (en + cs), config,
+  the `/limit-guard-config` picker, and `/config`. Default output is unchanged.
+- **Reset countdown.** New `reset_display` option (`clock` | `relative` | `both`, default
+  `clock`). `relative` shows the time until reset (`→ in 2h13m`, Czech `→ za 2h13m`);
+  `both` shows the clock plus the countdown in parentheses (`→ 06:00 (in 2h13m)`). Whole-hour
+  countdowns drop the minutes (`→ in 8h`). `clock` keeps the previous behavior.
+- **New `/limit-guard-status` command.** A localized diagnostic that prints the resolved
+  config and a health snapshot — OAuth token present, status-line cache age, and whether the
+  status line is wired in `~/.claude/settings.json` — so you can confirm the plugin is set
+  up correctly. Backed by `bin/status.mjs` (pure `renderStatus` + best-effort probes).
+
 ## 0.6.0 — 2026-06-06
 
 - **Localized status-line labels.** The window labels are now full localized words instead
