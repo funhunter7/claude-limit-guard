@@ -28,6 +28,12 @@
       "description": "What the AI should do when the threshold is reached. Leave empty for the built-in save-and-handoff routine.",
       "default": ""
     },
+    "warn_action": {
+      "type": "string",
+      "title": "Warn action at warn band",
+      "description": "Gentle advice appended to context when utilization is in the warn band (below threshold, non-blocking). Leave empty for the built-in message.",
+      "default": ""
+    },
     "label_style": {
       "type": "string",
       "title": "Label style",
