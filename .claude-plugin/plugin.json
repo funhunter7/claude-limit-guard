@@ -19,14 +19,12 @@
     "threshold_five_hour": {
       "type": "number",
       "title": "5-hour window threshold (%)",
-      "description": "Override the guard threshold for the five_hour window only. Unset falls back to the global threshold.",
-      "default": null
+      "description": "Override the guard threshold for the five_hour window only. Leave blank to use the global threshold."
     },
     "threshold_seven_day": {
       "type": "number",
       "title": "7-day window threshold (%)",
-      "description": "Override the guard threshold for the seven_day window only. Unset falls back to the global threshold.",
-      "default": null
+      "description": "Override the guard threshold for the seven_day window only. Leave blank to use the global threshold."
     },
     "watch": {
       "type": "string",
