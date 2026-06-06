@@ -279,3 +279,62 @@ test('loadConfig: project resetDisplay overrides env', () => {
   const readFile = () => JSON.stringify({ resetDisplay: 'both' });
   assert.equal(loadConfig('/proj', readFile, { CLAUDE_PLUGIN_OPTION_RESET_DISPLAY: 'relative' }).resetDisplay, 'both');
 });
+
+// --- per-window thresholds ---
+
+test('loadConfig: thresholdFiveHour/thresholdSevenDay default to null', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  const cfg = loadConfig('/proj', readThrows, noEnv);
+  assert.equal(cfg.thresholdFiveHour, null);
+  assert.equal(cfg.thresholdSevenDay, null);
+});
+
+test('loadConfig: reads CLAUDE_PLUGIN_OPTION_THRESHOLD_FIVE_HOUR as number', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_THRESHOLD_FIVE_HOUR: '80' }).thresholdFiveHour, 80);
+});
+
+test('loadConfig: reads CLAUDE_PLUGIN_OPTION_THRESHOLD_SEVEN_DAY as number', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_THRESHOLD_SEVEN_DAY: '70' }).thresholdSevenDay, 70);
+});
+
+test('loadConfig: out-of-range threshold_five_hour (>100) falls back to null', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_THRESHOLD_FIVE_HOUR: '150' }).thresholdFiveHour, null);
+});
+
+test('loadConfig: negative threshold_seven_day falls back to null', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_THRESHOLD_SEVEN_DAY: '-5' }).thresholdSevenDay, null);
+});
+
+test('loadConfig: non-numeric threshold_five_hour (NaN) falls back to null', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  // asNumber("nope") -> undefined -> thresholdFiveHour stays null from DEFAULT_CONFIG
+  assert.equal(loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_THRESHOLD_FIVE_HOUR: 'nope' }).thresholdFiveHour, null);
+});
+
+test('loadConfig: project thresholdFiveHour overrides env', () => {
+  const readFile = () => JSON.stringify({ thresholdFiveHour: 75 });
+  assert.equal(loadConfig('/proj', readFile, { CLAUDE_PLUGIN_OPTION_THRESHOLD_FIVE_HOUR: '80' }).thresholdFiveHour, 75);
+});
+
+test('loadConfig: project thresholdSevenDay overrides env', () => {
+  const readFile = () => JSON.stringify({ thresholdSevenDay: 65 });
+  assert.equal(loadConfig('/proj', readFile, { CLAUDE_PLUGIN_OPTION_THRESHOLD_SEVEN_DAY: '70' }).thresholdSevenDay, 65);
+});
+
+test('loadConfig: out-of-range thresholdFiveHour in project file falls back to null', () => {
+  const readFile = () => JSON.stringify({ thresholdFiveHour: 120 });
+  assert.equal(loadConfig('/proj', readFile, noEnv).thresholdFiveHour, null);
+});
+
+test('loadConfig: global pluginConfigs threshold_five_hour is parsed', () => {
+  const read = fakeRead({ settings: JSON.stringify({
+    pluginConfigs: { 'claude-limit-guard@claude-limit-guard': { options: { threshold_five_hour: 85, threshold_seven_day: 70 } } },
+  }) });
+  const cfg = loadConfig('/proj', read, GENV);
+  assert.equal(cfg.thresholdFiveHour, 85);
+  assert.equal(cfg.thresholdSevenDay, 70);
+});
