@@ -223,3 +223,24 @@ test('formatStatusLine: ascii authError', () => {
   const now = new Date('2026-05-31T01:00:00+02:00');
   assert.equal(formatStatusLine({ authError: 'no-token' }, 95, ['five_hour'], now, 'en-US', false, GLYPHS.ascii), '[!] sign in');
 });
+
+test('formatStatusLine: label_style short uses 5h/7d', () => {
+  assert.equal(
+    formatStatusLine(SAMPLE, 95, ['five_hour', 'seven_day'], NOW, 'en-US', false, GLYPHS.emoji, 80, 'short'),
+    '🟢 5h 72% → 06:00 · 🟢 7d 39% → Wednesday 6/3/2026 10:00'
+  );
+});
+
+test('formatStatusLine: label_style short uses cs short labels', () => {
+  assert.equal(
+    formatStatusLine(SAMPLE, 95, ['five_hour', 'seven_day'], NOW, 'cs-CZ', false, GLYPHS.emoji, 80, 'short'),
+    '🟢 5h 72% → 06:00 · 🟢 7d 39% → středa 3/6/2026 10:00'
+  );
+});
+
+test('formatStatusLine: label_style full (default) unchanged', () => {
+  assert.equal(
+    formatStatusLine(SAMPLE, 95, ['five_hour', 'seven_day'], NOW, 'en-US', false, GLYPHS.emoji, 80, 'full'),
+    '🟢 Limit session: 72% → 06:00 · 🟢 Week Limit: 39% → Wednesday 6/3/2026 10:00'
+  );
+});

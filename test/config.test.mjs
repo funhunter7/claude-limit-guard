@@ -239,3 +239,23 @@ test('loadConfig: null values in global options are treated as unset', () => {
   assert.equal(cfg.locale, DEFAULT_CONFIG.locale);
   assert.equal(cfg.style, DEFAULT_CONFIG.style);
 });
+
+test('loadConfig: labelStyle defaults to full', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, noEnv).labelStyle, 'full');
+});
+
+test('loadConfig: reads CLAUDE_PLUGIN_OPTION_LABEL_STYLE', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_LABEL_STYLE: 'short' }).labelStyle, 'short');
+});
+
+test('loadConfig: invalid labelStyle falls back to full', () => {
+  const readFile = () => JSON.stringify({ labelStyle: 'tiny' });
+  assert.equal(loadConfig('/proj', readFile, noEnv).labelStyle, 'full');
+});
+
+test('loadConfig: project labelStyle overrides env', () => {
+  const readFile = () => JSON.stringify({ labelStyle: 'short' });
+  assert.equal(loadConfig('/proj', readFile, { CLAUDE_PLUGIN_OPTION_LABEL_STYLE: 'full' }).labelStyle, 'short');
+});
