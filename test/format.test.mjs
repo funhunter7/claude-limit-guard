@@ -244,3 +244,63 @@ test('formatStatusLine: label_style full (default) unchanged', () => {
     '🟢 Limit session: 72% → 06:00 · 🟢 Week Limit: 39% → Wednesday 6/3/2026 10:00'
   );
 });
+
+// --- reset_display ---
+
+test('formatReset: mode=relative -> arrow + relIn + Hh Mm (en)', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  assert.equal(formatReset('2026-05-31T03:13:00+02:00', now, 'en-US', false, GLYPHS.emoji, 'relative'), '→ in 2h13m');
+});
+
+test('formatReset: mode=relative cs wording', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  assert.equal(formatReset('2026-05-31T03:13:00+02:00', now, 'cs-CZ', false, GLYPHS.emoji, 'relative'), '→ za 2h13m');
+});
+
+test('formatReset: mode=relative only minutes (no hour part)', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  assert.equal(formatReset('2026-05-31T01:13:00+02:00', now, 'en-US', false, GLYPHS.emoji, 'relative'), '→ in 13m');
+});
+
+test('formatReset: mode=relative in the past -> 0m', () => {
+  const now = new Date('2026-05-31T03:00:00+02:00');
+  assert.equal(formatReset('2026-05-31T01:00:00+02:00', now, 'en-US', false, GLYPHS.emoji, 'relative'), '→ in 0m');
+});
+
+test('formatReset: mode=relative exactly now -> 0m', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  assert.equal(formatReset('2026-05-31T01:00:00+02:00', now, 'en-US', false, GLYPHS.emoji, 'relative'), '→ in 0m');
+});
+
+test('formatReset: mode=both -> clock (relative) en', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  assert.equal(formatReset('2026-05-31T03:13:00+02:00', now, 'en-US', false, GLYPHS.emoji, 'both'), '→ 03:13 (in 2h13m)');
+});
+
+test('formatReset: mode=both cs wording', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  assert.equal(formatReset('2026-05-31T03:13:00+02:00', now, 'cs-CZ', false, GLYPHS.emoji, 'both'), '→ 03:13 (za 2h13m)');
+});
+
+test('formatReset: mode=clock (default, explicit) -> unchanged behavior', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  assert.equal(formatReset('2026-05-31T06:00:00+02:00', now, 'en-US', false, GLYPHS.emoji, 'clock'), '→ 06:00');
+});
+
+test('formatStatusLine: reset_display=relative threads through', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  const sample = { five_hour: { utilization: 72, resets_at: '2026-05-31T03:13:00+02:00' } };
+  assert.equal(
+    formatStatusLine(sample, 95, ['five_hour'], now, 'en-US', false, GLYPHS.emoji, 80, 'full', 'relative'),
+    '🟢 Limit session: 72% → in 2h13m'
+  );
+});
+
+test('formatStatusLine: reset_display=both threads through', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  const sample = { five_hour: { utilization: 72, resets_at: '2026-05-31T03:13:00+02:00' } };
+  assert.equal(
+    formatStatusLine(sample, 95, ['five_hour'], now, 'en-US', false, GLYPHS.emoji, 80, 'full', 'both'),
+    '🟢 Limit session: 72% → 03:13 (in 2h13m)'
+  );
+});

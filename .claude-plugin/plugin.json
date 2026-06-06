@@ -33,6 +33,12 @@
       "title": "Label style",
       "description": "How limit window labels appear in the status line: full (e.g. 'Limit session:') or short (e.g. '5h').",
       "default": "full"
+    },
+    "reset_display": {
+      "type": "string",
+      "title": "Reset countdown display",
+      "description": "How the reset time appears: clock (e.g. '→ 06:00'), relative (e.g. '→ in 2h13m'), or both (e.g. '→ 06:00 (in 2h13m)').",
+      "default": "clock"
     }
   }
 }
