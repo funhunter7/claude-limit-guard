@@ -73,3 +73,45 @@ test('warnedLimits: null usage -> empty', () => {
 test('warnedLimits: null utilization -> not warned', () => {
   assert.deepEqual(warnedLimits({ five_hour: { utilization: null } }, 80, 90, ['five_hour']), []);
 });
+
+// --- breachedLimits per-window overrides ---
+
+test('breachedLimits: per-window override beats global threshold', () => {
+  const u = { five_hour: { utilization: 85 }, seven_day: { utilization: 85 } };
+  assert.deepEqual(breachedLimits(u, 90, ['five_hour', 'seven_day'], { five_hour: 80 }), ['five_hour']);
+});
+
+test('breachedLimits: override falls back to global when key absent', () => {
+  // five_hour has no override -> uses global 90; 85 < 90 => not breached
+  const u = { five_hour: { utilization: 85 }, seven_day: { utilization: 91 } };
+  assert.deepEqual(breachedLimits(u, 90, ['five_hour', 'seven_day'], {}), ['seven_day']);
+});
+
+test('breachedLimits: override 50 catches a 60% window that global 90 would not', () => {
+  const u = { five_hour: { utilization: 60 } };
+  assert.deepEqual(breachedLimits(u, 90, ['five_hour'], { five_hour: 50 }), ['five_hour']);
+  assert.deepEqual(breachedLimits(u, 90, ['five_hour'], {}), []);
+});
+
+test('breachedLimits: override 0 marks a 0% window breached (zero is a valid threshold)', () => {
+  const u = { five_hour: { utilization: 0 } };
+  assert.deepEqual(breachedLimits(u, 90, ['five_hour'], { five_hour: 0 }), ['five_hour']);
+});
+
+test('breachedLimits: override on a non-watched window is ignored', () => {
+  const u = { five_hour: { utilization: 50 }, seven_day: { utilization: 50 } };
+  // seven_day override=10 but it's not in watch list -> ignored; five_hour has no override -> global 90 -> not breached
+  assert.deepEqual(breachedLimits(u, 90, ['five_hour'], { seven_day: 10 }), []);
+});
+
+test('breachedLimits: per-window threshold 80; five_hour 85% is BREACHED (no warn on top)', () => {
+  // Documents the warn/breach precedence: once breached via per-window threshold,
+  // warnedLimits still uses the global threshold so it does NOT add a warn notice.
+  const u = { five_hour: { utilization: 85 }, seven_day: { utilization: 30 } };
+  const breached = breachedLimits(u, 90, ['five_hour', 'seven_day'], { five_hour: 80 });
+  assert.deepEqual(breached, ['five_hour']); // five_hour is breached via per-window override
+  // warnedLimits uses global threshold 90: 85 < 90 -> five_hour appears in warned,
+  // but bin/usage.mjs skips the warn branch when breached.length > 0 -> no double-notice.
+  const warned = warnedLimits(u, 80, 90, ['five_hour', 'seven_day']);
+  assert.deepEqual(warned, ['five_hour']); // warnedLimits is unaware of override (by design)
+});

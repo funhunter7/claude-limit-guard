@@ -56,11 +56,17 @@ export async function runCli(mode, cwd, deps = {}) {
   }
   const glyphs = resolveStyle(cfg.style);
   const hour12 = resolveHour12(cfg.timeFormat);
-  const line = formatStatusLine(usage, cfg.threshold, cfg.watch, { now: now(), locale, hour12, glyphs, warnBand: cfg.warnBand, labelStyle: cfg.labelStyle, resetDisplay: cfg.resetDisplay });
+
+  // Build per-window threshold overrides from config (only set when non-null).
+  const overrides = {};
+  if (cfg.thresholdFiveHour != null) overrides.five_hour = cfg.thresholdFiveHour;
+  if (cfg.thresholdSevenDay != null) overrides.seven_day = cfg.thresholdSevenDay;
+
+  const line = formatStatusLine(usage, cfg.threshold, cfg.watch, { now: now(), locale, hour12, glyphs, warnBand: cfg.warnBand, labelStyle: cfg.labelStyle, resetDisplay: cfg.resetDisplay, thresholdOverrides: overrides });
 
   if (mode === '--statusline') return line;
 
-  const breached = breachedLimits(usage, cfg.threshold, cfg.watch);
+  const breached = breachedLimits(usage, cfg.threshold, cfg.watch, overrides);
 
   if (mode === '--context') {
     let ctx = m.contextLabel(line, cfg.threshold);

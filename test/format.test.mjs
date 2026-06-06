@@ -324,3 +324,39 @@ test('formatStatusLine: reset_display=both threads through', () => {
     '🟢 Limit session: 72% → 03:13 (in 2h13m)'
   );
 });
+
+// --- per-window thresholdOverrides color tests ---
+
+test('formatStatusLine: thresholdOverrides five_hour=80 -> 85% renders RED', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  const sample = { five_hour: { utilization: 85, resets_at: '2026-05-31T06:00:00+02:00' } };
+  const out = formatStatusLine(sample, 95, ['five_hour'], {
+    now, locale: 'en-US', hour12: false, glyphs: GLYPHS.emoji, warnBand: 80,
+    thresholdOverrides: { five_hour: 80 },
+  });
+  assert.match(out, /^🔴/, 'expected red glyph when per-window threshold 80 and util 85');
+});
+
+test('formatStatusLine: without override the same 85% renders amber (not red) vs global 95', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  const sample = { five_hour: { utilization: 85, resets_at: '2026-05-31T06:00:00+02:00' } };
+  const out = formatStatusLine(sample, 95, ['five_hour'], {
+    now, locale: 'en-US', hour12: false, glyphs: GLYPHS.emoji, warnBand: 80,
+  });
+  assert.match(out, /^🟡/, 'expected amber glyph at 85% with global threshold 95');
+});
+
+test('formatStatusLine: thresholdOverrides only affects the targeted window', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  const sample = {
+    five_hour: { utilization: 85, resets_at: '2026-05-31T06:00:00+02:00' },
+    seven_day: { utilization: 85, resets_at: '2026-06-03T10:00:00+02:00' },
+  };
+  const out = formatStatusLine(sample, 95, ['five_hour', 'seven_day'], {
+    now, locale: 'en-US', hour12: false, glyphs: GLYPHS.emoji, warnBand: 80,
+    thresholdOverrides: { five_hour: 80 },
+  });
+  // five_hour uses override 80 -> 85 >= 80 -> red; seven_day uses global 95 -> 85 < 95 -> amber
+  assert.match(out, /^🔴/, 'five_hour should be red');
+  assert.match(out, /🟡 Week Limit/, 'seven_day should be amber');
+});
