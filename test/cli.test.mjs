@@ -49,16 +49,18 @@ const BREACH = { five_hour: { utilization: 96, resets_at: '2026-05-31T06:00:00+0
                  seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
 const NOW = new Date('2026-05-31T01:00:00+02:00');
 
-function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null, timeFormat = '24', style = 'emoji', shouldBlockStop = () => true, stdinUsage = null, calls = {} } = {}) {
+function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null, warnAction = null, warnBand = 80, timeFormat = '24', style = 'emoji', shouldBlockStop = () => true, stdinUsage = null, calls = {} } = {}) {
   calls.getUsage = 0;
   calls.wrote = null;
   return {
     loadConfig: () => ({
       threshold: 95,
+      warnBand,
       watch: ['five_hour', 'seven_day'],
       handoff: '.claude/RESUME.md',
       locale,
       guardAction,
+      warnAction,
       timeFormat,
       style,
     }),
@@ -219,4 +221,41 @@ test('--context: ignores stdinUsage, always uses getUsage', async () => {
   await runCli('--context', '/proj', deps(SAMPLE, { stdinUsage: STDIN_FULL, calls }));
   assert.equal(calls.getUsage, 1);
   assert.equal(calls.wrote, null);
+});
+
+// --- warn_action / two-stage guard tests ---
+
+// Usage at 84%: inside [warnBand=80, threshold=90) — should produce warn notice, no block
+const WARN = { five_hour: { utilization: 84, resets_at: '2026-05-31T06:00:00+02:00' },
+               seven_day: { utilization: 40, resets_at: '2026-06-03T10:00:00+02:00' } };
+
+test('--context: warn band hit -> warn notice appended, no decision:block', async () => {
+  const out = JSON.parse(await runCli('--context', '/proj', deps(WARN, { warnBand: 80 })));
+  assert.equal(out.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
+  assert.match(out.hookSpecificOutput.additionalContext, /APPROACHING LIMIT/);
+  assert.match(out.hookSpecificOutput.additionalContext, /five_hour/);
+  // decision:block must NOT appear in context output
+  assert.doesNotMatch(JSON.stringify(out), /decision.*block/);
+});
+
+test('--context: warn band hit -> custom warnAction overrides default', async () => {
+  const d = deps(WARN, { warnBand: 80, warnAction: 'Custom warn directive here.' });
+  const out = JSON.parse(await runCli('--context', '/proj', d));
+  assert.match(out.hookSpecificOutput.additionalContext, /Custom warn directive here\./);
+});
+
+test('--context: warn band hit -> czech locale uses czech warn message', async () => {
+  const out = JSON.parse(await runCli('--context', '/proj', deps(WARN, { warnBand: 80, locale: 'cs-CZ' })));
+  assert.match(out.hookSpecificOutput.additionalContext, /BLÍŽÍ SE LIMIT/);
+});
+
+test('--context: breach (>=threshold) -> breach path, no warn notice added on top', async () => {
+  const out = JSON.parse(await runCli('--context', '/proj', deps(BREACH)));
+  assert.match(out.hookSpecificOutput.additionalContext, /THRESHOLD EXCEEDED/);
+  assert.doesNotMatch(out.hookSpecificOutput.additionalContext, /APPROACHING LIMIT/);
+});
+
+test('--stop: only in warn band (84% < threshold 90) -> {} (unchanged)', async () => {
+  const out = JSON.parse(await runCli('--stop', '/proj', deps(WARN, { warnBand: 80 })));
+  assert.deepEqual(out, {});
 });

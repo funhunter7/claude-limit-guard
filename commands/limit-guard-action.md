@@ -1,28 +1,39 @@
 ---
-description: Set or clear the claude-limit-guard guard action (globally or for this project)
+description: Set or clear the claude-limit-guard guard action or warn action (globally or for this project)
 allowed-tools: AskUserQuestion, Bash
 ---
 
-You are configuring the **guard action** for the `claude-limit-guard` plugin — the
-instruction the assistant follows when a usage limit crosses the threshold.
+You are configuring **guard actions** for the `claude-limit-guard` plugin.
 
 Communicate with the user exclusively in Czech.
 
+There are two action types:
+- **guard action** (`guard_action`) — instruction the assistant follows when the threshold is reached (blocks).
+- **warn action** (`warn_action`) — gentle notice appended to context when utilization is in the warn band
+  (below threshold, non-blocking).
+
 Steps:
 
-1. Use **AskUserQuestion** to ask what the user wants to do. Offer these options:
-   - **Globální** — set the guard action for all projects (writes `~/.claude/settings.json`).
-   - **Projektový** — set it only for the current project (writes `.claude/limit-guard.json`).
-   - **Vymazat** — remove a guard action (back to the built-in routine).
+1. Use **AskUserQuestion** to ask what the user wants to configure. Offer these options:
+   - **Guard action — globální** — set the guard action for all projects.
+   - **Guard action — projektový** — set it only for the current project.
+   - **Warn action — globální** — set the warn action for all projects.
+   - **Warn action — projektový** — set it only for the current project.
+   - **Vymazat** — remove an action (back to the built-in behaviour).
 
-2. If the user chose **Vymazat**, use AskUserQuestion again to ask which level to clear:
-   **globální** or **projektový**. Then run:
-   - global: `node "${CLAUDE_PLUGIN_ROOT}/bin/guard.mjs" --scope global --action clear`
-   - project: `node "${CLAUDE_PLUGIN_ROOT}/bin/guard.mjs" --scope project --action clear`
+2. If the user chose **Vymazat**, use AskUserQuestion to ask:
+   - Which type to clear: **guard** or **warn**.
+   - Which scope: **globální** or **projektový**.
 
-3. If the user chose **Globální** or **Projektový**, ask them (plain prompt) for the guard
-   action text. Then run, substituting `<scope>` (global|project) and the text:
-   `node "${CLAUDE_PLUGIN_ROOT}/bin/guard.mjs" --scope <scope> --action set --value "<text>"`
+   Then run one of:
+   - `node "${CLAUDE_PLUGIN_ROOT}/bin/guard.mjs" --scope global  --action clear --kind guard`
+   - `node "${CLAUDE_PLUGIN_ROOT}/bin/guard.mjs" --scope project --action clear --kind guard`
+   - `node "${CLAUDE_PLUGIN_ROOT}/bin/guard.mjs" --scope global  --action clear --kind warn`
+   - `node "${CLAUDE_PLUGIN_ROOT}/bin/guard.mjs" --scope project --action clear --kind warn`
+
+3. For set operations, ask the user for the action text, then run:
+   `node "${CLAUDE_PLUGIN_ROOT}/bin/guard.mjs" --scope <scope> --action set --value "<text>" --kind <kind>`
+   where `<scope>` is `global|project` and `<kind>` is `guard|warn`.
 
    The command runs in the current project directory, so project scope writes to the
    right `.claude/limit-guard.json`.

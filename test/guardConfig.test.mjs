@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { setProjectGuard, clearProjectGuard, setGlobalGuard, clearGlobalGuard, PLUGIN_KEY,
-  setProjectOption, clearProjectOption, setGlobalOption, clearGlobalOption } from '../lib/guardConfig.mjs';
+  setProjectOption, clearProjectOption, setGlobalOption, clearGlobalOption,
+  setProjectWarn, clearProjectWarn, setGlobalWarn, clearGlobalWarn } from '../lib/guardConfig.mjs';
 
 // In-memory fake fs: a Map of path -> contents.
 function fakeFs(initial = {}) {
@@ -189,4 +190,75 @@ test('clearGlobalGuard: clears under an existing claude-limit-guard@* key', () =
   const obj = JSON.parse(fs.files.get(path));
   assert.equal(obj.pluginConfigs['claude-limit-guard@mk'].options.guard_action, undefined);
   assert.equal(obj.pluginConfigs['claude-limit-guard@mk'].options.threshold, 90);
+});
+
+// --- warn_action setters ---
+
+test('setProjectWarn: creates file with warnAction', () => {
+  const fs = fakeFs();
+  const path = setProjectWarn('/proj', 'Wrap up soon.', fs);
+  assert.match(path.replace(/\\/g, '/'), /\/proj\/\.claude\/limit-guard\.json$/);
+  assert.deepEqual(JSON.parse(fs.files.get(path)), { warnAction: 'Wrap up soon.' });
+});
+
+test('setProjectWarn: preserves other keys', () => {
+  const fs = fakeFs();
+  const path = setProjectWarn('/proj', 'x', fs);
+  fs.files.set(path, JSON.stringify({ threshold: 90, warnAction: 'x' }));
+  setProjectWarn('/proj', 'new warn', fs);
+  assert.deepEqual(JSON.parse(fs.files.get(path)), { threshold: 90, warnAction: 'new warn' });
+});
+
+test('clearProjectWarn: removes only warnAction', () => {
+  const fs = fakeFs();
+  const path = setProjectWarn('/proj', 'x', fs);
+  fs.files.set(path, JSON.stringify({ threshold: 90, warnAction: 'x' }));
+  clearProjectWarn('/proj', fs);
+  assert.deepEqual(JSON.parse(fs.files.get(path)), { threshold: 90 });
+});
+
+test('setGlobalWarn: writes warn_action under .options', () => {
+  const fs = fakeFs();
+  const path = setGlobalWarn('Save a draft.', { ...fs, env: ENV });
+  assert.match(path.replace(/\\/g, '/'), /\/home\/u\/\.claude\/settings\.json$/);
+  const obj = JSON.parse(fs.files.get(path));
+  assert.equal(obj.pluginConfigs[PLUGIN_KEY].options.warn_action, 'Save a draft.');
+});
+
+test('setGlobalWarn: preserves existing siblings (guard_action stays)', () => {
+  const fs = fakeFs();
+  const path = setGlobalWarn('x', { ...fs, env: ENV });
+  fs.files.set(path, JSON.stringify({
+    pluginConfigs: { [PLUGIN_KEY]: { options: { guard_action: 'g', threshold: 90 } } },
+  }));
+  setGlobalWarn('new warn', { ...fs, env: ENV });
+  const opts = JSON.parse(fs.files.get(path)).pluginConfigs[PLUGIN_KEY].options;
+  assert.equal(opts.warn_action, 'new warn');
+  assert.equal(opts.guard_action, 'g');
+  assert.equal(opts.threshold, 90);
+});
+
+test('clearGlobalWarn: removes warn_action, keeps siblings', () => {
+  const fs = fakeFs();
+  const path = setGlobalWarn('x', { ...fs, env: ENV });
+  fs.files.set(path, JSON.stringify({
+    pluginConfigs: { [PLUGIN_KEY]: { options: { warn_action: 'x', guard_action: 'g' } } },
+  }));
+  clearGlobalWarn({ ...fs, env: ENV });
+  const opts = JSON.parse(fs.files.get(path)).pluginConfigs[PLUGIN_KEY].options;
+  assert.equal(opts.warn_action, undefined);
+  assert.equal(opts.guard_action, 'g');
+});
+
+test('clearGlobalWarn: drops an emptied .options', () => {
+  const fs = fakeFs();
+  const path = setGlobalWarn('x', { ...fs, env: ENV });
+  fs.files.set(path, JSON.stringify({ pluginConfigs: { [PLUGIN_KEY]: { options: { warn_action: 'x' } } } }));
+  clearGlobalWarn({ ...fs, env: ENV });
+  assert.equal(JSON.parse(fs.files.get(path)).pluginConfigs[PLUGIN_KEY].options, undefined);
+});
+
+test('clearGlobalWarn: no file -> no throw', () => {
+  const fs = fakeFs();
+  assert.doesNotThrow(() => clearGlobalWarn({ ...fs, env: ENV }));
 });

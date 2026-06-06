@@ -6,7 +6,7 @@ import { getUsage as defaultGetUsage, CACHE_PATH } from '../lib/usage.mjs';
 import { writeCache as defaultWriteCache } from '../lib/cache.mjs';
 import { coversWatched, usageFromRateLimits } from '../lib/stdinUsage.mjs';
 import { formatStatusLine, resolveHour12, resolveStyle, resolveLocale } from '../lib/format.mjs';
-import { breachedLimits } from '../lib/threshold.mjs';
+import { breachedLimits, warnedLimits } from '../lib/threshold.mjs';
 import { getMessages } from '../lib/messages.mjs';
 import { shouldBlockStop as defaultShouldBlockStop } from '../lib/stopGuard.mjs';
 
@@ -67,6 +67,12 @@ export async function runCli(mode, cwd, deps = {}) {
     if (breached.length) {
       const action = cfg.guardAction || m.contextAction(cfg.handoff);
       ctx += ' ' + m.breach(breached.join(', '), action);
+    } else {
+      const warned = warnedLimits(usage, cfg.warnBand, cfg.threshold, cfg.watch);
+      if (warned.length) {
+        const action = cfg.warnAction || m.warnAction;
+        ctx += ' ' + m.warn(warned.join(', '), action);
+      }
     }
     return JSON.stringify({ hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: ctx } });
   }
