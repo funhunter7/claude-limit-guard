@@ -272,6 +272,16 @@ test('formatReset: mode=relative exactly now -> 0m', () => {
   assert.equal(formatReset('2026-05-31T01:00:00+02:00', now, 'en-US', false, GLYPHS.emoji, 'relative'), '→ in 0m');
 });
 
+test('formatReset: mode=relative exactly 60 minutes -> 1h (no trailing 0m)', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  assert.equal(formatReset('2026-05-31T02:00:00+02:00', now, 'en-US', false, GLYPHS.emoji, 'relative'), '→ in 1h');
+});
+
+test('formatReset: mode=relative 61 minutes -> 1h1m', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  assert.equal(formatReset('2026-05-31T02:01:00+02:00', now, 'en-US', false, GLYPHS.emoji, 'relative'), '→ in 1h1m');
+});
+
 test('formatReset: mode=both -> clock (relative) en', () => {
   const now = new Date('2026-05-31T01:00:00+02:00');
   assert.equal(formatReset('2026-05-31T03:13:00+02:00', now, 'en-US', false, GLYPHS.emoji, 'both'), '→ 03:13 (in 2h13m)');
@@ -280,6 +290,16 @@ test('formatReset: mode=both -> clock (relative) en', () => {
 test('formatReset: mode=both cs wording', () => {
   const now = new Date('2026-05-31T01:00:00+02:00');
   assert.equal(formatReset('2026-05-31T03:13:00+02:00', now, 'cs-CZ', false, GLYPHS.emoji, 'both'), '→ 03:13 (za 2h13m)');
+});
+
+test('formatReset: mode=both cross-day -> weekday + date + time + (relative) en', () => {
+  // now=2026-05-31 01:00 CEST, reset=2026-06-03 10:00 CEST (Wednesday, different day)
+  // diff = 4860 min = 81h exactly -> after fix: "in 81h" (no trailing 0m)
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  assert.equal(
+    formatReset('2026-06-03T10:00:00+02:00', now, 'en-US', false, GLYPHS.emoji, 'both'),
+    '→ Wednesday 6/3/2026 10:00 (in 81h)'
+  );
 });
 
 test('formatReset: mode=clock (default, explicit) -> unchanged behavior', () => {
