@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="236" viewBox="0 0 880 236" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#161b22"/>
+      <stop offset="1" stop-color="#0d1117"/>
+    </linearGradient>
+  </defs>
+
+  <!-- window -->
+  <rect x="1" y="1" width="878" height="234" rx="12" fill="url(#bg)" stroke="#30363d" stroke-width="1.5"/>
+
+  <!-- title bar -->
+  <circle cx="26" cy="26" r="6" fill="#ff5f56"/>
+  <circle cx="46" cy="26" r="6" fill="#ffbd2e"/>
+  <circle cx="66" cy="26" r="6" fill="#27c93f"/>
+  <text x="440" y="30" text-anchor="middle" font-size="12.5" fill="#8b949e">claude-limit-guard — subscription usage in your Claude Code status line</text>
+  <line x1="0" y1="48" x2="880" y2="48" stroke="#21262d" stroke-width="1"/>
+
+  <!-- healthy (en) -->
+  <text x="30" y="86" font-size="15" fill="#c9d1d9">
+    <tspan fill="#3fb950">●</tspan> Limit session: <tspan fill="#7ee787">45%</tspan> <tspan fill="#8b949e">→ 14:40</tspan>  <tspan fill="#484f58">·</tspan>  <tspan fill="#3fb950">●</tspan> Week Limit: <tspan fill="#7ee787">38%</tspan> <tspan fill="#8b949e">→ Wednesday 6/10/2026 09:00</tspan>
+  </text>
+
+  <!-- warning + over threshold (en) -->
+  <text x="30" y="118" font-size="15" fill="#c9d1d9">
+    <tspan fill="#d29922">●</tspan> Limit session: <tspan fill="#e3b341">84%</tspan> <tspan fill="#8b949e">→ 14:40</tspan>  <tspan fill="#484f58">·</tspan>  <tspan fill="#f85149">●</tspan> Week Limit: <tspan fill="#ff7b72">93%</tspan> <tspan fill="#8b949e">→ Wednesday 6/10/2026 09:00</tspan>
+  </text>
+
+  <!-- localized (cs) -->
+  <text x="30" y="150" font-size="15" fill="#c9d1d9">
+    <tspan fill="#3fb950">●</tspan> Limit relace: <tspan fill="#7ee787">45%</tspan> <tspan fill="#8b949e">→ 14:40</tspan>  <tspan fill="#484f58">·</tspan>  <tspan fill="#3fb950">●</tspan> Týdenní limit: <tspan fill="#7ee787">38%</tspan> <tspan fill="#8b949e">→ středa 10/6/2026 09:00</tspan>
+  </text>
+  <text x="30" y="170" font-size="11.5" fill="#6e7681">↑ labels, weekday &amp; date follow your OS locale — here Czech</text>
+
+  <!-- legend -->
+  <line x1="0" y1="190" x2="880" y2="190" stroke="#21262d" stroke-width="1"/>
+  <circle cx="34" cy="212" r="5" fill="#3fb950"/>
+  <text x="44" y="216" font-size="12.5" fill="#8b949e">ok</text>
+  <circle cx="96" cy="212" r="5" fill="#d29922"/>
+  <text x="106" y="216" font-size="12.5" fill="#8b949e">warning (≥ 80%)</text>
+  <circle cx="244" cy="212" r="5" fill="#f85149"/>
+  <text x="254" y="216" font-size="12.5" fill="#8b949e">over threshold → guard saves a handoff</text>
+</svg>

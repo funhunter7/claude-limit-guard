@@ -10,6 +10,10 @@
 ![Node](https://img.shields.io/badge/node-%E2%89%A518-339933?logo=node.js&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Windows%20·%20macOS%20·%20Linux-lightgrey)
 
+<p align="center">
+  <img src="assets/status-line.svg" alt="claude-limit-guard status line: per-window usage %, color band, and reset time — localized to the OS" width="100%">
+</p>
+
 ```text
 🟢 Limit session: 72% → 06:00 · 🟢 Week Limit: 39% → Wednesday 6/3/2026 10:00
 ```
