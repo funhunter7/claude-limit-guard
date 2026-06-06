@@ -27,6 +27,12 @@
       "title": "Guard action at threshold",
       "description": "What the AI should do when the threshold is reached. Leave empty for the built-in save-and-handoff routine.",
       "default": ""
+    },
+    "label_style": {
+      "type": "string",
+      "title": "Label style",
+      "description": "How limit window labels appear in the status line: full (e.g. 'Limit session:') or short (e.g. '5h').",
+      "default": "full"
     }
   }
 }

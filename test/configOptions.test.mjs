@@ -46,3 +46,16 @@ test('CONFIG_OPTIONS: maps each option to project (camelCase) and global (snake_
   assert.equal(CONFIG_OPTIONS.threshold.projectKey, 'threshold');
   assert.equal(CONFIG_OPTIONS.watch.projectKey, 'watch');
 });
+
+test('coerceOptionValue: label_style enum accepts full/short', () => {
+  assert.equal(coerceOptionValue('label_style', 'full'), 'full');
+  assert.equal(coerceOptionValue('label_style', 'short'), 'short');
+  assert.throws(() => coerceOptionValue('label_style', 'tiny'), /full, short/);
+});
+
+test('CONFIG_OPTIONS: label_style maps to labelStyle / label_style', () => {
+  assert.equal(CONFIG_OPTIONS.label_style.projectKey, 'labelStyle');
+  assert.equal(CONFIG_OPTIONS.label_style.globalKey, 'label_style');
+  assert.equal(CONFIG_OPTIONS.label_style.type, 'enum');
+  assert.deepEqual(CONFIG_OPTIONS.label_style.choices, ['full', 'short']);
+});
