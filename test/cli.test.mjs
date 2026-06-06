@@ -233,7 +233,7 @@ test('--context: warn band hit -> warn notice appended, no decision:block', asyn
   const out = JSON.parse(await runCli('--context', '/proj', deps(WARN, { warnBand: 80 })));
   assert.equal(out.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
   assert.match(out.hookSpecificOutput.additionalContext, /APPROACHING LIMIT/);
-  assert.match(out.hookSpecificOutput.additionalContext, /five_hour/);
+  assert.match(out.hookSpecificOutput.additionalContext, /five_hour/); // raw window key intentionally passed — mirrors breach() behaviour
   // decision:block must NOT appear in context output
   assert.doesNotMatch(JSON.stringify(out), /decision.*block/);
 });
