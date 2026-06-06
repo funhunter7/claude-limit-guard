@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.6.0 — 2026-06-06
+
+- **Localized status-line labels.** The window labels are now full localized words instead
+  of `5h`/`7d` — English `Limit session:` / `Week Limit:`, Czech `Limit relace:` /
+  `Týdenní limit:` — sourced from `messages.mjs` by the (OS-driven) locale.
+- **Linting.** Added ESLint (flat config, `@eslint/js` recommended) as a devDependency with
+  `npm run lint` / `npm run check`, plus a CI `lint` job on Node 22. Fixed the two findings
+  it surfaced (redundant assignment in `stopGuard`, underscore-param convention).
+- **Richer reset display for cross-day windows.** A reset on another day (typically the
+  7-day window) now shows the full weekday plus a date and time —
+  `→ Wednesday 6/3/2026 10:00` — instead of a bare abbreviation. The date follows the
+  locale's field order with slash separators and a year (US month-first `6/3/2026`, Europe
+  day-first `3/6/2026`, Japan `2026/6/3`). Same-day resets still render just `→ HH:MM`.
+- **Locale follows the OS by default.** `locale` now defaults to `system`: weekday/date
+  names and message language are read from the operating system (cross-platform — Linux
+  `LANG`/`LC_*` and Windows region), so no language needs to be set. Pin a BCP-47 tag to
+  override. New `resolveLocale` in `lib/format.mjs`.
+- **Leaner `/config` dialog.** The OS/terminal-driven options (`locale`, `time_format`,
+  `style`) are no longer prompted in `/config` since they auto-detect. `time_format` and
+  `style` remain overridable on demand.
+- **New `/limit-guard-config` command.** Pick settings (`threshold`, `warn_band`, `watch`,
+  `time_format`, `style`) from menus instead of typing them, at global or per-project
+  scope. Backed by `bin/config.mjs` and `lib/configOptions.mjs` (validated coercion) and
+  generic option setters in `lib/guardConfig.mjs`.
+- **Stop guard 7-day coverage.** Confirmed (with regression tests) that the Stop hook
+  already blocks on the 7-day window when it crosses the threshold, not just the 5-hour one.
+
 ## 0.4.0
 
 - **Status line honors `/config` options.** `loadConfig` now reads the plugin's options

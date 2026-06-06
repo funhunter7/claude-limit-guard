@@ -21,4 +21,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+      # Tests have no runtime dependencies, so no install step is needed.
       - run: node --test
+
+  lint:
+    runs-on: ubuntu-latest
+    # ESLint 10 requires Node 20+, so lint runs on a single modern version (the test
+    # matrix still covers 18/20/22). devDependencies are installed only here.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run lint

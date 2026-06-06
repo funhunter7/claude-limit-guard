@@ -5,7 +5,7 @@ import { loadConfig as defaultLoadConfig } from '../lib/config.mjs';
 import { getUsage as defaultGetUsage, CACHE_PATH } from '../lib/usage.mjs';
 import { writeCache as defaultWriteCache } from '../lib/cache.mjs';
 import { coversWatched, usageFromRateLimits } from '../lib/stdinUsage.mjs';
-import { formatStatusLine, resolveHour12, resolveStyle } from '../lib/format.mjs';
+import { formatStatusLine, resolveHour12, resolveStyle, resolveLocale } from '../lib/format.mjs';
 import { breachedLimits } from '../lib/threshold.mjs';
 import { getMessages } from '../lib/messages.mjs';
 import { shouldBlockStop as defaultShouldBlockStop } from '../lib/stopGuard.mjs';
@@ -25,7 +25,10 @@ export async function runCli(mode, cwd, deps = {}) {
   } = deps;
 
   const cfg = loadConfig(cwd);
-  const m = getMessages(cfg.locale);
+  // 'system'/'auto' (the default) follows the OS locale for both weekday/date rendering
+  // and message language — so the user needn't set a language. Works on Windows and Linux.
+  const locale = resolveLocale(cfg.locale);
+  const m = getMessages(locale);
   // Only --resume-check and --stop care whether a handoff already exists; compute lazily
   // so the per-keystroke --statusline/--context paths skip the filesystem stat.
   const hoExists = () => (handoffExists ? handoffExists() : existsSync(join(cwd, cfg.handoff)));
@@ -53,7 +56,7 @@ export async function runCli(mode, cwd, deps = {}) {
   }
   const glyphs = resolveStyle(cfg.style);
   const hour12 = resolveHour12(cfg.timeFormat);
-  const line = formatStatusLine(usage, cfg.threshold, cfg.watch, now(), cfg.locale, hour12, glyphs, cfg.warnBand);
+  const line = formatStatusLine(usage, cfg.threshold, cfg.watch, now(), locale, hour12, glyphs, cfg.warnBand);
 
   if (mode === '--statusline') return line;
 
