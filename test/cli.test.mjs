@@ -74,13 +74,13 @@ function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = nu
 
 test('--statusline: plain emoji + percentages', async () => {
   const out = await runCli('--statusline', '/proj', deps(SAMPLE));
-  assert.equal(out, '🟢 5h 72% →06:00 · 🟢 7d 39% →Wed');
+  assert.equal(out, '🟢 Limit session: 72% → 06:00 · 🟢 Week Limit: 39% → Wednesday 6/3/2026 10:00');
 });
 
 test('--context: under threshold -> info, no guard directive', async () => {
   const out = JSON.parse(await runCli('--context', '/proj', deps(SAMPLE)));
   assert.equal(out.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
-  assert.match(out.hookSpecificOutput.additionalContext, /5h 72%/);
+  assert.match(out.hookSpecificOutput.additionalContext, /Limit session: 72%/);
   assert.doesNotMatch(out.hookSpecificOutput.additionalContext, /PŘEKROČEN/);
 });
 
@@ -99,13 +99,21 @@ test('--context: custom guardAction overrides built-in directive', async () => {
 
 test('--statusline: locale switches weekday language', async () => {
   const out = await runCli('--statusline', '/proj', deps(SAMPLE, { locale: 'cs-CZ' }));
-  assert.equal(out, '🟢 5h 72% →06:00 · 🟢 7d 39% →st');
+  assert.equal(out, '🟢 Limit relace: 72% → 06:00 · 🟢 Týdenní limit: 39% → středa 3/6/2026 10:00');
 });
 
 test('--stop: breach + no handoff -> block to run guard', async () => {
   const out = JSON.parse(await runCli('--stop', '/proj', deps(BREACH, { handoffExists: false })));
   assert.equal(out.decision, 'block');
   assert.match(out.reason, /guard/i);
+});
+
+test('--stop: 7d breach alone (5h under threshold) -> block', async () => {
+  const breach7d = { five_hour: { utilization: 40, resets_at: '2026-05-31T06:00:00+02:00' },
+                     seven_day: { utilization: 96, resets_at: '2026-06-03T10:00:00+02:00' } };
+  const out = JSON.parse(await runCli('--stop', '/proj', deps(breach7d, { handoffExists: false })));
+  assert.equal(out.decision, 'block');
+  assert.match(out.reason, /seven_day/);
 });
 
 test('--stop: custom guardAction appears in block reason', async () => {
@@ -140,7 +148,7 @@ test('--statusline: timeFormat 12 -> 12h same-day time', async () => {
   const sample = { five_hour: { utilization: 72, resets_at: '2026-05-31T05:00:00+02:00' },
                    seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
   const out = await runCli('--statusline', '/proj', deps(sample, { timeFormat: '12' }));
-  assert.match(out.replace(/ /g, ' '), /5h 72% →5:00 AM/);
+  assert.match(out.replace(/ /g, ' '), /Limit session: 72% → 5:00 AM/);
 });
 
 test('--statusline: authError -> key glyph', async () => {
@@ -150,7 +158,7 @@ test('--statusline: authError -> key glyph', async () => {
 
 test('--statusline: ascii style renders plain', async () => {
   const out = await runCli('--statusline', '/proj', deps(SAMPLE, { style: 'ascii' }));
-  assert.match(out, /\[OK\] 5h 72% ->06:00 \| \[OK\] 7d 39% ->Wed/);
+  assert.match(out, /\[OK\] Limit session: 72% -> 06:00 \| \[OK\] Week Limit: 39% -> Wednesday 6\/3\/2026 10:00/);
 });
 
 test('--context: czech locale keeps czech directive', async () => {
@@ -178,7 +186,7 @@ const STDIN_FULL = { five_hour: { utilization: 72, resets_at: Date.parse('2026-0
 test('--statusline: complete stdinUsage -> formats from stdin, writes cache, no getUsage', async () => {
   const calls = {};
   const out = await runCli('--statusline', '/proj', deps(undefined, { stdinUsage: STDIN_FULL, calls }));
-  assert.equal(out, '🟢 5h 72% →06:00 · 🟢 7d 39% →Wed');
+  assert.equal(out, '🟢 Limit session: 72% → 06:00 · 🟢 Week Limit: 39% → Wednesday 6/3/2026 10:00');
   assert.equal(calls.getUsage, 0);
   assert.deepEqual(calls.wrote, STDIN_FULL);
 });
@@ -187,7 +195,7 @@ test('--statusline: partial stdinUsage -> falls back to getUsage, no cache write
   const calls = {};
   const partial = { five_hour: { utilization: 72, resets_at: Date.parse('2026-05-31T06:00:00+02:00') } };
   const out = await runCli('--statusline', '/proj', deps(SAMPLE, { stdinUsage: partial, calls }));
-  assert.equal(out, '🟢 5h 72% →06:00 · 🟢 7d 39% →Wed');
+  assert.equal(out, '🟢 Limit session: 72% → 06:00 · 🟢 Week Limit: 39% → Wednesday 6/3/2026 10:00');
   assert.equal(calls.getUsage, 1);
   assert.equal(calls.wrote, null);
 });

@@ -1,6 +1,6 @@
 {
   "name": "claude-limit-guard",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Watches Claude subscription usage limits; shows them in the status line, injects them into context, and gracefully saves/resumes work at a configurable threshold.",
   "author": { "name": "funhunter7" },
   "userConfig": {
@@ -22,29 +22,11 @@
       "description": "Comma-separated limit windows to show/guard, e.g. five_hour,seven_day (default five_hour,seven_day).",
       "default": "five_hour,seven_day"
     },
-    "locale": {
-      "type": "string",
-      "title": "Status-line locale",
-      "description": "BCP-47 locale for weekday names, e.g. en-US, cs-CZ, de-DE, ja-JP (default en-US).",
-      "default": "en-US"
-    },
     "guard_action": {
       "type": "string",
       "title": "Guard action at threshold",
       "description": "What the AI should do when the threshold is reached. Leave empty for the built-in save-and-handoff routine.",
       "default": ""
-    },
-    "time_format": {
-      "type": "string",
-      "title": "Time format",
-      "description": "Reset time format in the status line: system (follow OS, default), 12, or 24.",
-      "default": "system"
-    },
-    "style": {
-      "type": "string",
-      "title": "Status-line style",
-      "description": "Glyph style for the status line: auto (detect terminal, default), emoji, or ascii (safe for legacy cmd/conhost).",
-      "default": "auto"
     }
   }
 }

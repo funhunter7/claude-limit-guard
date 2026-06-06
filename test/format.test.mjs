@@ -32,22 +32,40 @@ import { formatReset } from '../lib/format.mjs';
 
 test('formatReset: same local day -> arrow + HH:MM', () => {
   const now = new Date('2026-05-31T01:00:00+02:00');
-  assert.equal(formatReset('2026-05-31T06:00:00+02:00', now), '→06:00');
+  assert.equal(formatReset('2026-05-31T06:00:00+02:00', now), '→ 06:00');
 });
 
-test('formatReset: different day -> arrow + localized weekday abbrev', () => {
+test('formatReset: different day -> weekday + locale-ordered slash date with year + time', () => {
   const now = new Date('2026-05-31T01:00:00+02:00'); // Sunday
   const wed = '2026-06-03T10:00:00+02:00'; // Wednesday
-  assert.equal(formatReset(wed, now, 'en-US'), '→Wed');
-  assert.equal(formatReset(wed, now, 'cs-CZ'), '→st');
-  assert.equal(formatReset(wed, now, 'de-DE'), '→Mi');
+  // US puts the month first; Europe the day first; both use slashes and include the year.
+  assert.equal(formatReset(wed, now, 'en-US'), '→ Wednesday 6/3/2026 10:00');
+  assert.equal(formatReset(wed, now, 'cs-CZ'), '→ středa 3/6/2026 10:00');
+  assert.equal(formatReset(wed, now, 'de-DE'), '→ Mittwoch 3/6/2026 10:00');
 });
 
-test('formatReset: no locale -> system default weekday', () => {
+test('formatReset: different day -> Japanese keeps year/month/day order', () => {
   const now = new Date('2026-05-31T01:00:00+02:00');
   const wed = '2026-06-03T10:00:00+02:00';
-  const expected = '→' + new Date(wed).toLocaleDateString(undefined, { weekday: 'short' });
-  assert.equal(formatReset(wed, now), expected);
+  assert.equal(formatReset(wed, now, 'ja-JP'), '→ 水曜日 2026/6/3 10:00');
+});
+
+test('formatReset: different day -> system default weekday + slash date + time', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  const wed = '2026-06-03T10:00:00+02:00';
+  const weekday = new Date(wed).toLocaleDateString(undefined, { weekday: 'long' });
+  const date = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'numeric', day: 'numeric' })
+    .formatToParts(new Date(wed))
+    .filter((p) => ['day', 'month', 'year'].includes(p.type))
+    .map((p) => p.value)
+    .join('/');
+  assert.equal(formatReset(wed, now), `→ ${weekday} ${date} 10:00`);
+});
+
+test('formatReset: different day with 12h -> weekday + slash date + AM/PM time', () => {
+  const now = new Date('2026-05-31T01:00:00+02:00');
+  const wed = '2026-06-03T17:00:00+02:00';
+  assert.equal(formatReset(wed, now, 'en-US', true).replace(/ /g, ' '), '→ Wednesday 6/3/2026 5:00 PM');
 });
 
 test('formatReset: missing/invalid -> empty string', () => {
@@ -63,7 +81,7 @@ const SAMPLE = JSON.parse(readFileSync(new URL('./fixtures/usage-sample.json', i
 const NOW = new Date('2026-05-31T01:00:00+02:00');
 
 test('formatLimit: emoji + label + rounded pct + reset', () => {
-  assert.equal(formatLimit('5h', SAMPLE.five_hour, 95, NOW), '🟢 5h 72% →06:00');
+  assert.equal(formatLimit('5h', SAMPLE.five_hour, 95, NOW), '🟢 5h 72% → 06:00');
 });
 
 test('formatLimit: unknown limit -> white placeholder', () => {
@@ -74,19 +92,26 @@ test('formatLimit: unknown limit -> white placeholder', () => {
 test('formatStatusLine: both limits joined by middot', () => {
   assert.equal(
     formatStatusLine(SAMPLE, 95, ['five_hour', 'seven_day'], NOW, 'en-US'),
-    '🟢 5h 72% →06:00 · 🟢 7d 39% →Wed'
+    '🟢 Limit session: 72% → 06:00 · 🟢 Week Limit: 39% → Wednesday 6/3/2026 10:00'
   );
 });
 
 test('formatStatusLine: locale switches weekday language', () => {
   assert.equal(
     formatStatusLine(SAMPLE, 95, ['seven_day'], NOW, 'de-DE'),
-    '🟢 7d 39% →Mi'
+    '🟢 Week Limit: 39% → Mittwoch 3/6/2026 10:00'
   );
 });
 
+test('formatStatusLine: labels localize by locale (Czech for cs, English fallback)', () => {
+  const cs = formatStatusLine(SAMPLE, 95, ['five_hour', 'seven_day'], NOW, 'cs-CZ');
+  assert.match(cs, /🟢 Limit relace: 72% .* · 🟢 Týdenní limit: 39%/);
+  // de has no message set -> labels fall back to English
+  assert.match(formatStatusLine(SAMPLE, 95, ['five_hour'], NOW, 'de-DE'), /🟢 Limit session: 72%/);
+});
+
 test('formatStatusLine: respects watch list', () => {
-  assert.equal(formatStatusLine(SAMPLE, 95, ['five_hour'], NOW), '🟢 5h 72% →06:00');
+  assert.equal(formatStatusLine(SAMPLE, 95, ['five_hour'], NOW), '🟢 Limit session: 72% → 06:00');
 });
 
 test('formatStatusLine: null usage -> placeholder', () => {
@@ -114,7 +139,7 @@ test('resolveHour12: unknown value treated as system', () => {
 test('formatReset: 12h same-day -> localized AM/PM', () => {
   const now = new Date('2026-05-31T01:00:00+02:00');
   const out = formatReset('2026-05-31T17:00:00+02:00', now, 'en-US', true);
-  assert.equal(out.replace(/ /g, ' '), '→5:00 PM');
+  assert.equal(out.replace(/ /g, ' '), '→ 5:00 PM');
 });
 
 test('formatReset: 12h respects locale wording', () => {
@@ -132,14 +157,30 @@ test('formatReset: 12h noon -> 12:00 PM', () => {
 
 test('formatReset: hour12 defaults false -> 24h unchanged', () => {
   const now = new Date('2026-05-31T01:00:00+02:00');
-  assert.equal(formatReset('2026-05-31T17:00:00+02:00', now, 'en-US'), '→17:00');
+  assert.equal(formatReset('2026-05-31T17:00:00+02:00', now, 'en-US'), '→ 17:00');
 });
 
 test('formatStatusLine: hour12 true switches same-day time to 12h', () => {
   const sample = { five_hour: { utilization: 72, resets_at: '2026-05-31T17:00:00+02:00' } };
   const now = new Date('2026-05-31T01:00:00+02:00');
   const out = formatStatusLine(sample, 95, ['five_hour'], now, 'en-US', true);
-  assert.match(out.replace(/ /g, ' '), /🟢 5h 72% →5:00 PM/);
+  assert.match(out.replace(/ /g, ' '), /🟢 Limit session: 72% → 5:00 PM/);
+});
+
+import { resolveLocale } from '../lib/format.mjs';
+
+test('resolveLocale: system -> OS default locale from detector', () => {
+  assert.equal(resolveLocale('system', () => 'cs-CZ'), 'cs-CZ');
+});
+
+test('resolveLocale: auto/empty/undefined -> OS default locale', () => {
+  assert.equal(resolveLocale('auto', () => 'en-GB'), 'en-GB');
+  assert.equal(resolveLocale('', () => 'en-GB'), 'en-GB');
+  assert.equal(resolveLocale(undefined, () => 'en-GB'), 'en-GB');
+});
+
+test('resolveLocale: explicit locale passes through (detector not used)', () => {
+  assert.equal(resolveLocale('de-DE', () => 'cs-CZ'), 'de-DE');
 });
 
 import { GLYPHS, resolveStyle } from '../lib/format.mjs';
@@ -174,7 +215,7 @@ test('formatStatusLine: ascii glyphs render plain', () => {
   const now = new Date('2026-05-31T01:00:00+02:00');
   assert.equal(
     formatStatusLine(sample, 95, ['five_hour', 'seven_day'], now, 'en-US', false, GLYPHS.ascii),
-    '[OK] 5h 72% ->06:00 | [OK] 7d 39% ->Wed'
+    '[OK] Limit session: 72% -> 06:00 | [OK] Week Limit: 39% -> Wednesday 6/3/2026 10:00'
   );
 });
 

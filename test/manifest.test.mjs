@@ -48,3 +48,19 @@ test('plugin.json: does not re-reference the auto-loaded hooks/hooks.json', () =
 test('plugin.json and package.json versions agree', () => {
   assert.equal(readJson('.claude-plugin/plugin.json').version, readJson('package.json').version);
 });
+
+test('plugin.json: userConfig omits the OS/terminal-driven options (locale, time_format, style)', () => {
+  // These auto-detect from the OS/terminal, so the always-on /config dialog must not prompt
+  // for them; time_format/style remain overridable on demand via /limit-guard-config.
+  const { userConfig } = readJson('.claude-plugin/plugin.json');
+  for (const k of ['locale', 'time_format', 'style']) {
+    assert.equal(userConfig[k], undefined, `userConfig should not expose ${k}`);
+  }
+});
+
+test('commands/limit-guard-config.md: drives bin/config.mjs via CLAUDE_PLUGIN_ROOT, Czech', () => {
+  const md = readFileSync(join(root, 'commands/limit-guard-config.md'), 'utf8');
+  assert.match(md, /allowed-tools:.*AskUserQuestion/, 'must allow AskUserQuestion');
+  assert.match(md, /\$\{CLAUDE_PLUGIN_ROOT\}\/bin\/config\.mjs/, 'must invoke bin/config.mjs');
+  assert.match(md, /Communicate with the user exclusively in Czech/, 'must instruct Czech');
+});

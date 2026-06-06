@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { setProjectGuard, clearProjectGuard, setGlobalGuard, clearGlobalGuard, PLUGIN_KEY } from '../lib/guardConfig.mjs';
+import { setProjectGuard, clearProjectGuard, setGlobalGuard, clearGlobalGuard, PLUGIN_KEY,
+  setProjectOption, clearProjectOption, setGlobalOption, clearGlobalOption } from '../lib/guardConfig.mjs';
 
 // In-memory fake fs: a Map of path -> contents.
 function fakeFs(initial = {}) {
@@ -46,7 +47,51 @@ test('setProjectGuard: invalid JSON refuses to overwrite', () => {
   assert.throws(() => setProjectGuard('/proj', 'y', fs), /Invalid JSON/);
 });
 
+test('setProjectOption: writes an arbitrary camelCase key, preserving others', () => {
+  const fs = fakeFs();
+  const path = setProjectOption('/proj', 'timeFormat', '24', fs);
+  assert.match(path.replace(/\\/g, '/'), /\/proj\/\.claude\/limit-guard\.json$/);
+  fs.files.set(path, JSON.stringify({ threshold: 90, timeFormat: '24' }));
+  setProjectOption('/proj', 'style', 'ascii', fs);
+  assert.deepEqual(JSON.parse(fs.files.get(path)), { threshold: 90, timeFormat: '24', style: 'ascii' });
+});
+
+test('setProjectOption: stores array values (watch) verbatim', () => {
+  const fs = fakeFs();
+  const path = setProjectOption('/proj', 'watch', ['seven_day'], fs);
+  assert.deepEqual(JSON.parse(fs.files.get(path)), { watch: ['seven_day'] });
+});
+
+test('clearProjectOption: removes only the named key', () => {
+  const fs = fakeFs();
+  const path = setProjectOption('/proj', 'style', 'emoji', fs);
+  fs.files.set(path, JSON.stringify({ threshold: 90, style: 'emoji' }));
+  clearProjectOption('/proj', 'style', fs);
+  assert.deepEqual(JSON.parse(fs.files.get(path)), { threshold: 90 });
+});
+
 const ENV = { CLAUDE_CONFIG_DIR: '/home/u/.claude' };
+
+test('setGlobalOption: writes a snake_case key under .options, preserving siblings', () => {
+  const fs = fakeFs();
+  const path = setGlobalOption('time_format', '24', { ...fs, env: ENV });
+  assert.match(path.replace(/\\/g, '/'), /\/home\/u\/\.claude\/settings\.json$/);
+  fs.files.set(path, JSON.stringify({
+    pluginConfigs: { [PLUGIN_KEY]: { options: { guard_action: 'x', time_format: '24' } } },
+  }));
+  setGlobalOption('style', 'ascii', { ...fs, env: ENV });
+  const opts = JSON.parse(fs.files.get(path)).pluginConfigs[PLUGIN_KEY].options;
+  assert.deepEqual(opts, { guard_action: 'x', time_format: '24', style: 'ascii' });
+});
+
+test('clearGlobalOption: removes the key, drops an emptied .options', () => {
+  const fs = fakeFs();
+  const path = setGlobalOption('style', 'emoji', { ...fs, env: ENV });
+  fs.files.set(path, JSON.stringify({ pluginConfigs: { [PLUGIN_KEY]: { options: { style: 'emoji' } } } }));
+  clearGlobalOption('style', { ...fs, env: ENV });
+  assert.equal(JSON.parse(fs.files.get(path)).pluginConfigs[PLUGIN_KEY].options, undefined);
+});
+
 
 test('setGlobalGuard: writes guard_action under .options', () => {
   const fs = fakeFs();
