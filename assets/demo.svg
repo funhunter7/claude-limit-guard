@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="200" viewBox="0 0 880 200" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#161b22"/>
+      <stop offset="1" stop-color="#0d1117"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="1" y="1" width="878" height="198" rx="12" fill="url(#bg)" stroke="#30363d" stroke-width="1.5"/>
+
+  <!-- title bar (static) -->
+  <circle cx="26" cy="26" r="6" fill="#ff5f56"/>
+  <circle cx="46" cy="26" r="6" fill="#ffbd2e"/>
+  <circle cx="66" cy="26" r="6" fill="#27c93f"/>
+  <text x="440" y="30" text-anchor="middle" font-size="12.5" fill="#8b949e">claude-limit-guard — your session climbing toward the limit</text>
+  <line x1="0" y1="48" x2="880" y2="48" stroke="#21262d" stroke-width="1"/>
+
+  <!-- Scene 1: healthy (green) -->
+  <g opacity="0">
+    <animate attributeName="opacity" dur="9s" repeatCount="indefinite"
+             values="1;1;0;0;0;0;0;1" keyTimes="0;0.28;0.33;0.62;0.66;0.95;0.98;1"/>
+    <text x="30" y="98" font-size="13.5" fill="#c9d1d9"><tspan fill="#3fb950">●</tspan> Limit session: <tspan fill="#7ee787">61%</tspan> <tspan fill="#8b949e">→ 14:40</tspan>  <tspan fill="#484f58">·</tspan>  <tspan fill="#3fb950">●</tspan> Week Limit: <tspan fill="#7ee787">38%</tspan> <tspan fill="#8b949e">→ Wednesday 6/10/2026 09:00</tspan></text>
+    <text x="30" y="138" font-size="12" fill="#6e7681">healthy — plenty of headroom</text>
+  </g>
+
+  <!-- Scene 2: warning (amber) -->
+  <g opacity="0">
+    <animate attributeName="opacity" dur="9s" repeatCount="indefinite"
+             values="0;0;1;1;0;0;0;0" keyTimes="0;0.31;0.36;0.60;0.64;0.95;0.98;1"/>
+    <text x="30" y="98" font-size="13.5" fill="#c9d1d9"><tspan fill="#d29922">●</tspan> Limit session: <tspan fill="#e3b341">84%</tspan> <tspan fill="#8b949e">→ 14:40</tspan>  <tspan fill="#484f58">·</tspan>  <tspan fill="#3fb950">●</tspan> Week Limit: <tspan fill="#7ee787">41%</tspan> <tspan fill="#8b949e">→ Wednesday 6/10/2026 09:00</tspan></text>
+    <text x="30" y="138" font-size="12" fill="#e3b341">≥ 80% — status line turns amber</text>
+  </g>
+
+  <!-- Scene 3: over threshold + guard (red) -->
+  <g opacity="0">
+    <animate attributeName="opacity" dur="9s" repeatCount="indefinite"
+             values="0;0;0;0;1;1;0;0" keyTimes="0;0.31;0.36;0.64;0.69;0.95;0.98;1"/>
+    <text x="30" y="86" font-size="13.5" fill="#c9d1d9"><tspan fill="#f85149">●</tspan> Limit session: <tspan fill="#ff7b72">96%</tspan> <tspan fill="#8b949e">→ 14:40</tspan>  <tspan fill="#484f58">·</tspan>  <tspan fill="#3fb950">●</tspan> Week Limit: <tspan fill="#7ee787">44%</tspan> <tspan fill="#8b949e">→ Wednesday 6/10/2026 09:00</tspan></text>
+    <text x="30" y="120" font-size="13" fill="#f85149">⛔ Threshold hit — guard saved a handoff to <tspan fill="#ffa657">RESUME.md</tspan></text>
+    <text x="30" y="150" font-size="12" fill="#6e7681">safe to stop — Claude offers to resume after the reset</text>
+  </g>
+</svg>

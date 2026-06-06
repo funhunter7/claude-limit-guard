@@ -11,6 +11,9 @@
 ![Platform](https://img.shields.io/badge/platform-Windows%20·%20macOS%20·%20Linux-lightgrey)
 
 <p align="center">
+  <img src="assets/demo.svg" alt="Animated demo: the session usage climbs from green to amber to red, then the guard saves a handoff to RESUME.md" width="100%">
+</p>
+<p align="center">
   <img src="assets/status-line.svg" alt="claude-limit-guard status line: per-window usage %, color band, and reset time — localized to the OS" width="100%">
 </p>
 
