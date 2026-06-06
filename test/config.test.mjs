@@ -259,3 +259,23 @@ test('loadConfig: project labelStyle overrides env', () => {
   const readFile = () => JSON.stringify({ labelStyle: 'short' });
   assert.equal(loadConfig('/proj', readFile, { CLAUDE_PLUGIN_OPTION_LABEL_STYLE: 'full' }).labelStyle, 'short');
 });
+
+test('loadConfig: resetDisplay defaults to clock', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, noEnv).resetDisplay, 'clock');
+});
+
+test('loadConfig: reads CLAUDE_PLUGIN_OPTION_RESET_DISPLAY', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_RESET_DISPLAY: 'relative' }).resetDisplay, 'relative');
+});
+
+test('loadConfig: invalid resetDisplay falls back to clock', () => {
+  const readFile = () => JSON.stringify({ resetDisplay: 'fancy' });
+  assert.equal(loadConfig('/proj', readFile, noEnv).resetDisplay, 'clock');
+});
+
+test('loadConfig: project resetDisplay overrides env', () => {
+  const readFile = () => JSON.stringify({ resetDisplay: 'both' });
+  assert.equal(loadConfig('/proj', readFile, { CLAUDE_PLUGIN_OPTION_RESET_DISPLAY: 'relative' }).resetDisplay, 'both');
+});

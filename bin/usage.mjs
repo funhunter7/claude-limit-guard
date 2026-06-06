@@ -56,7 +56,7 @@ export async function runCli(mode, cwd, deps = {}) {
   }
   const glyphs = resolveStyle(cfg.style);
   const hour12 = resolveHour12(cfg.timeFormat);
-  const line = formatStatusLine(usage, cfg.threshold, cfg.watch, now(), locale, hour12, glyphs, cfg.warnBand, cfg.labelStyle);
+  const line = formatStatusLine(usage, cfg.threshold, cfg.watch, now(), locale, hour12, glyphs, cfg.warnBand, cfg.labelStyle, cfg.resetDisplay);
 
   if (mode === '--statusline') return line;
 

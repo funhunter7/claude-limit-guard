@@ -59,3 +59,17 @@ test('CONFIG_OPTIONS: label_style maps to labelStyle / label_style', () => {
   assert.equal(CONFIG_OPTIONS.label_style.type, 'enum');
   assert.deepEqual(CONFIG_OPTIONS.label_style.choices, ['full', 'short']);
 });
+
+test('coerceOptionValue: reset_display enum accepts clock/relative/both', () => {
+  assert.equal(coerceOptionValue('reset_display', 'clock'), 'clock');
+  assert.equal(coerceOptionValue('reset_display', 'relative'), 'relative');
+  assert.equal(coerceOptionValue('reset_display', 'both'), 'both');
+  assert.throws(() => coerceOptionValue('reset_display', 'fancy'), /clock, relative, both/);
+});
+
+test('CONFIG_OPTIONS: reset_display maps to resetDisplay / reset_display', () => {
+  assert.equal(CONFIG_OPTIONS.reset_display.projectKey, 'resetDisplay');
+  assert.equal(CONFIG_OPTIONS.reset_display.globalKey, 'reset_display');
+  assert.equal(CONFIG_OPTIONS.reset_display.type, 'enum');
+  assert.deepEqual(CONFIG_OPTIONS.reset_display.choices, ['clock', 'relative', 'both']);
+});
