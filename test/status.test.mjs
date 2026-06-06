@@ -11,6 +11,9 @@ test('renderStatus: shows resolved config and health', () => {
   );
   assert.match(out, /threshold.*90/);
   assert.match(out, /token.*ok/i);
+  // cs-only: Czech config section header and default guard-action label
+  assert.match(out, /Konfigurace/);
+  assert.match(out, /výchozí/);
 });
 
 // --- token present / missing ---
@@ -41,6 +44,9 @@ test('renderStatus (cs): token present -> ok wording in Czech', () => {
   assert.match(out, /token/i);
   // Czech "ok" is the same, but we assert something locale-specific too
   assert.match(out, /ok/i);
+  // cs-only: Czech health section header and default guard-action label
+  assert.match(out, /Zdraví/);
+  assert.match(out, /výchozí/);
 });
 
 test('renderStatus (cs): token missing -> Czech missing wording', () => {

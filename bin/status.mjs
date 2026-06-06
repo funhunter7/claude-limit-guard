@@ -24,13 +24,13 @@ export function renderStatus(cfg, health) {
   const configLines = [
     `  threshold: ${cfg.threshold}%`,
     `  watch: ${(cfg.watch ?? []).join(', ')}`,
-    `  warnBand: ${cfg.warnBand ?? '-'}%`,
+    `  warnBand: ${cfg.warnBand != null ? cfg.warnBand + '%' : '-'}`,
     `  labelStyle: ${cfg.labelStyle ?? '-'}`,
     `  resetDisplay: ${cfg.resetDisplay ?? '-'}`,
     `  style: ${cfg.style ?? '-'}`,
     `  timeFormat: ${cfg.timeFormat ?? '-'}`,
     `  locale: ${cfg.locale ?? '-'}`,
-    `  guardAction: ${cfg.guardAction ? JSON.stringify(cfg.guardAction) : '(default)'}`,
+    `  guardAction: ${cfg.guardAction ? JSON.stringify(cfg.guardAction) : `(${m.statusGuardActionDefault})`}`,
   ];
 
   // --- health section ---
