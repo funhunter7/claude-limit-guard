@@ -74,6 +74,8 @@ export async function runCli(mode, cwd, deps = {}) {
       const action = cfg.guardAction || m.contextAction(cfg.handoff);
       ctx += ' ' + m.breach(breached.join(', '), action);
     } else {
+      // Per-window threshold overrides aren't passed here: a window breached by its override
+      // is excluded above via !breached.length, so breach already takes precedence over warning.
       const warned = warnedLimits(usage, cfg.warnBand, cfg.threshold, cfg.watch);
       if (warned.length) {
         const action = cfg.warnAction || m.warnAction;
