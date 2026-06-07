@@ -13,6 +13,24 @@ test('maps a complete payload, seconds -> ms', () => {
   });
 });
 
+test('maps per-model seven_day_opus / seven_day_sonnet when present', () => {
+  const r = usageFromRateLimits({
+    seven_day_opus: { used_percentage: 50, resets_at: 1700000000 },
+    seven_day_sonnet: { used_percentage: 12, resets_at: 1700000000 },
+  });
+  assert.deepEqual(r, {
+    seven_day_opus: { utilization: 50, resets_at: 1700000000000 },
+    seven_day_sonnet: { utilization: 12, resets_at: 1700000000000 },
+  });
+});
+
+test('per-model windows absent -> simply not present (default windows unaffected)', () => {
+  const r = usageFromRateLimits({ five_hour: { used_percentage: 10, resets_at: 1700000000 } });
+  assert.equal('seven_day_opus' in r, false);
+  assert.equal('seven_day_sonnet' in r, false);
+  assert.ok(r.five_hour);
+});
+
 test('string resets_at is passed through unchanged', () => {
   const r = usageFromRateLimits({
     five_hour: { used_percentage: 10, resets_at: '2026-05-31T06:00:00+02:00' },

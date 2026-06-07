@@ -99,3 +99,7 @@ test('CONFIG_OPTIONS: notifications maps to notifications / notifications', () =
   assert.equal(CONFIG_OPTIONS.notifications.type, 'enum');
   assert.deepEqual(CONFIG_OPTIONS.notifications.choices, ['off', 'on']);
 });
+
+test('CONFIG_OPTIONS: watch choices include the per-model 7-day windows', () => {
+  assert.deepEqual(CONFIG_OPTIONS.watch.choices, ['five_hour', 'seven_day', 'seven_day_opus', 'seven_day_sonnet']);
+});
