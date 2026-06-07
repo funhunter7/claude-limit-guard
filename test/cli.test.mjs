@@ -49,7 +49,7 @@ const BREACH = { five_hour: { utilization: 96, resets_at: '2026-05-31T06:00:00+0
                  seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
 const NOW = new Date('2026-05-31T01:00:00+02:00');
 
-function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null, warnAction = null, warnBand = 80, timeFormat = '24', style = 'emoji', shouldBlockStop = () => true, stdinUsage = null, projectionDisplay = 'off', history = [], notifications = 'off', shouldNotify = () => true, calls = {} } = {}) {
+function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null, warnAction = null, warnBand = 80, timeFormat = '24', style = 'emoji', shouldBlockStop = () => true, stdinUsage = null, projectionDisplay = 'off', history = [], notifications = 'off', shouldNotify = () => true, snoozeUntil = () => null, calls = {} } = {}) {
   calls.getUsage = 0;
   calls.wrote = null;
   calls.appended = null;
@@ -85,6 +85,8 @@ function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = nu
     // Inject the usage log so tests never write to ~/.claude.
     appendUsage: (_p, reading) => { calls.loggedUsage = reading; return true; },
     usageLogPath: '/tmp/test-usage.jsonl',
+    // Inject the snooze gate so tests never read the real temp-dir marker.
+    snoozeUntil,
   };
 }
 
@@ -361,4 +363,20 @@ test('runCli --statusline: notifications on, no prior history -> no reset toast'
   const calls = {};
   await runCli('--statusline', '/proj', deps(reset, { stdinUsage: reset, notifications: 'on', history: [], calls }));
   assert.equal(calls.notified.length, 0);
+});
+
+// --- E4: snooze gating ---
+test('--stop: snoozed -> does not block even on breach', async () => {
+  const out = JSON.parse(await runCli('--stop', '/proj', deps(BREACH, { handoffExists: false, snoozeUntil: () => 9_999_999_999_999 })));
+  assert.deepEqual(out, {});
+});
+
+test('--context: snoozed -> no breach directive', async () => {
+  const out = JSON.parse(await runCli('--context', '/proj', deps(BREACH, { snoozeUntil: () => 9_999_999_999_999 })));
+  assert.doesNotMatch(out.hookSpecificOutput.additionalContext, /THRESHOLD EXCEEDED|PŘEKROČEN/);
+});
+
+test('--context: not snoozed -> breach directive still present', async () => {
+  const out = JSON.parse(await runCli('--context', '/proj', deps(BREACH)));
+  assert.match(out.hookSpecificOutput.additionalContext, /THRESHOLD EXCEEDED/);
 });

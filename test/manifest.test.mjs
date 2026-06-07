@@ -78,3 +78,10 @@ test('commands/limit-guard-stats.md: drives bin/stats.mjs via CLAUDE_PLUGIN_ROOT
   assert.match(md, /\$\{CLAUDE_PLUGIN_ROOT\}\/bin\/stats\.mjs/, 'must invoke bin/stats.mjs');
   assert.match(md, /Communicate with the user exclusively in Czech/, 'must instruct Czech');
 });
+
+test('commands/limit-guard-snooze.md: drives bin/snooze.mjs via CLAUDE_PLUGIN_ROOT, Czech', () => {
+  const md = readFileSync(join(root, 'commands/limit-guard-snooze.md'), 'utf8');
+  assert.match(md, /allowed-tools:.*Bash/, 'must allow Bash');
+  assert.match(md, /\$\{CLAUDE_PLUGIN_ROOT\}\/bin\/snooze\.mjs/, 'must invoke bin/snooze.mjs');
+  assert.match(md, /Communicate with the user exclusively in Czech/, 'must instruct Czech');
+});
