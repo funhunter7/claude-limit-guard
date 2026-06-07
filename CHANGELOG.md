@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.9.0 — 2026-06-07
+
+- **Desktop notifications (opt-in).** New `notifications` option (`off` | `on`, default `off`).
+  When on, a single OS notification fires when a window enters the warn band or crosses the
+  threshold — macOS (`osascript`), Linux (`notify-send`), Windows (WinRT toast via PowerShell),
+  all zero-dependency and best-effort. Gated once-per-crossing so the status line never spams.
+- **Per-model 7-day windows.** `watch` now also accepts `seven_day_opus` / `seven_day_sonnet`,
+  mapped best-effort when those (undocumented) keys appear in the payload, with localized labels
+  (`Week Opus:` / `Week Sonnet:`, short `7dO` / `7dS`). The default watch is unchanged.
+- **Usage history & `/limit-guard-stats`.** The status line records a throttled, rolling ~7-day
+  usage log under `~/.claude`; the new `/limit-guard-stats` command summarizes it — number of
+  readings, peak 5h/7d utilization, and reset count. Localized (en + cs).
+
 ## 0.8.1 — 2026-06-07
 
 - **Projection accuracy.** History writes are now throttled to one reading per minute, and the
