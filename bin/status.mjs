@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { loadConfig } from '../lib/config.mjs';
 import { getToken } from '../lib/credentials.mjs';
 import { CACHE_PATH } from '../lib/usage.mjs';
+import { readHistory, HISTORY_PATH } from '../lib/history.mjs';
 import { globalSettingsPath } from '../lib/pluginSettings.mjs';
 import { resolveLocale } from '../lib/format.mjs';
 import { getMessages } from '../lib/messages.mjs';
@@ -18,19 +19,25 @@ export function renderStatus(cfg, health) {
   const locale = resolveLocale(cfg.locale);
   const m = getMessages(locale);
 
-  const { tokenPresent, cacheAgeMs, statusLineWired } = health;
+  const { tokenPresent, cacheAgeMs, statusLineWired, historyCount } = health;
+
+  const pct = (v) => (v != null ? v + '%' : '-');
 
   // --- config section ---
   const configLines = [
     `  threshold: ${cfg.threshold}%`,
+    `  thresholdFiveHour: ${pct(cfg.thresholdFiveHour)}`,
+    `  thresholdSevenDay: ${pct(cfg.thresholdSevenDay)}`,
     `  watch: ${(cfg.watch ?? []).join(', ')}`,
-    `  warnBand: ${cfg.warnBand != null ? cfg.warnBand + '%' : '-'}`,
+    `  warnBand: ${pct(cfg.warnBand)}`,
     `  labelStyle: ${cfg.labelStyle ?? '-'}`,
     `  resetDisplay: ${cfg.resetDisplay ?? '-'}`,
+    `  projectionDisplay: ${cfg.projectionDisplay ?? '-'}`,
     `  style: ${cfg.style ?? '-'}`,
     `  timeFormat: ${cfg.timeFormat ?? '-'}`,
     `  locale: ${cfg.locale ?? '-'}`,
     `  guardAction: ${cfg.guardAction ? JSON.stringify(cfg.guardAction) : `(${m.statusGuardActionDefault})`}`,
+    `  warnAction: ${cfg.warnAction ? JSON.stringify(cfg.warnAction) : `(${m.statusGuardActionDefault})`}`,
   ];
 
   // --- health section ---
@@ -39,11 +46,15 @@ export function renderStatus(cfg, health) {
     ? m.statusCacheNone
     : m.statusCacheFresh(Math.round(cacheAgeMs / 1000));
   const statusLineLine = statusLineWired ? m.statusLineWired : m.statusLineNotWired;
+  const historyLine = historyCount
+    ? m.statusHistoryReadings(historyCount)
+    : m.statusHistoryNone;
 
   const healthLines = [
     `  ${tokenLine}`,
     `  ${cacheLine}`,
     `  ${statusLineLine}`,
+    `  ${historyLine}`,
   ];
 
   return [
@@ -90,8 +101,9 @@ function main() {
   const tokenPresent = getToken() !== null;
   const cacheAgeMs = probeCacheAge();
   const statusLineWired = probeStatusLineWired();
+  const historyCount = readHistory(HISTORY_PATH).length;
 
-  const health = { tokenPresent, cacheAgeMs, statusLineWired };
+  const health = { tokenPresent, cacheAgeMs, statusLineWired, historyCount };
   process.stdout.write(renderStatus(cfg, health) + '\n');
 }
 

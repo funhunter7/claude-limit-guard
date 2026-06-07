@@ -100,8 +100,9 @@ Use the absolute path to `bin/usage.mjs`. On macOS/Linux use a normal POSIX path
 
 | Command | What it does |
 |---------|--------------|
-| **`/limit-guard-config`** | Pick a setting (`threshold`, `warn_band`, `watch`, `time_format`, `style`) from menus, choose **global** or **current-project** scope, and set its value — no JSON editing. |
-| **`/limit-guard-action`** | Set or clear the **guard action** (what Claude does at the threshold), globally or per-project. |
+| **`/limit-guard-config`** | Pick a setting (`threshold`, `warn_band`, per-window thresholds, `watch`, `label_style`, `reset_display`, `projection_display`, `time_format`, `style`) from menus, choose **global** or **current-project** scope, and set its value — no JSON editing. |
+| **`/limit-guard-action`** | Set or clear the **guard action** (at the threshold) or the **warn action** (in the warn band), globally or per-project. |
+| **`/limit-guard-status`** | Print the resolved config plus a health snapshot — token, status-line cache age, whether the status line is wired, and burn-rate history readings. |
 
 Both write through a validated helper that preserves your other settings.
 
@@ -113,8 +114,14 @@ Settings you can change **directly in Claude Code** via `/config` (under this pl
 |--------|------|---------|--------|
 | `threshold` | number | `95` | At or above this usage percentage the guard routine triggers. |
 | `warn_band` | number | `80` | At or above this percentage (but below `threshold`) the status line turns amber. |
+| `threshold_five_hour` | number | _(unset)_ | Per-window guard threshold for the `five_hour` window; overrides `threshold` for it. Blank = use the global `threshold`. |
+| `threshold_seven_day` | number | _(unset)_ | Per-window guard threshold for the `seven_day` window; overrides `threshold` for it. Blank = use the global `threshold`. |
 | `watch` | string (CSV) | `five_hour,seven_day` | Which limit windows to show/guard, comma-separated. |
 | `guard_action` | string | `""` | What Claude should do when the threshold is reached. Leave empty for the built-in save-and-handoff routine. |
+| `warn_action` | string | `""` | Gentle, **non-blocking** advice appended to context while usage is in the warn band (below `threshold`). Leave empty for the built-in message. |
+| `label_style` | enum | `full` | Window labels: `full` (`Limit session:` / `Week Limit:`) or `short` (`5h` / `7d`) to save line width. |
+| `reset_display` | enum | `clock` | Reset time as `clock` (`→ 06:00`), `relative` (`→ in 2h13m`), or `both` (`→ 06:00 (in 2h13m)`). |
+| `projection_display` | enum | `off` | When `on`, adds a burn-rate estimate like `📈 ~1h40m to 90%` for the soonest-to-breach window, from the recent usage trend. |
 
 ### Auto-detected (not in the `/config` dialog)
 
