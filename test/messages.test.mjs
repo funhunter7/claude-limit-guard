@@ -41,6 +41,15 @@ test('snooze strings present in en/cs', () => {
   }
 });
 
+test('setup strings present in en/cs', () => {
+  for (const loc of ['en-US', 'cs-CZ']) {
+    const m = getMessages(loc);
+    assert.equal(typeof m.setupWired, 'string');
+    assert.equal(typeof m.setupAlreadyWired, 'string');
+    assert.match(m.setupBackedUp('/p/settings.json.bak'), /settings\.json\.bak/);
+  }
+});
+
 test('getMessages: en-US -> english', () => {
   assert.equal(getMessages('en-US').signIn, 'sign in');
   assert.match(getMessages('en-US').contextLabel('LINE', 95), /Threshold 95%/);
