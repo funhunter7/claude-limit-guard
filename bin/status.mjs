@@ -1,14 +1,11 @@
 #!/usr/bin/env node
 // Powers /limit-guard-status: prints resolved config + a quick health snapshot.
-import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { loadConfig } from '../lib/config.mjs';
-import { getToken } from '../lib/credentials.mjs';
-import { CACHE_PATH } from '../lib/usage.mjs';
 import { readHistory, HISTORY_PATH } from '../lib/history.mjs';
-import { globalSettingsPath } from '../lib/pluginSettings.mjs';
 import { resolveLocale } from '../lib/format.mjs';
 import { getMessages } from '../lib/messages.mjs';
+import { probeTokenPresent, probeStatusLineWired, probeCacheAge } from '../lib/health.mjs';
 
 // Pure: takes a resolved config object and a health snapshot, returns a
 // localized multi-line diagnostic string. No I/O, no Date.now().
@@ -68,37 +65,11 @@ export function renderStatus(cfg, health) {
   ].join('\n');
 }
 
-// Probe whether the status-line is wired to this plugin. Looks for a
-// settings.json statusLine.command that references bin/usage.mjs. Best-effort;
-// returns false on any error.
-function probeStatusLineWired(env = process.env, readFile = readFileSync) {
-  try {
-    const raw = readFile(globalSettingsPath(env), 'utf8');
-    const settings = JSON.parse(raw);
-    const cmd = settings?.statusLine?.command;
-    return typeof cmd === 'string' && cmd.includes('usage.mjs');
-  } catch {
-    return false;
-  }
-}
-
-// Probe the cache age. Reads the raw cache file to get its `ts` field, then
-// returns (now - ts) in ms. Returns null when the file is absent or malformed.
-function probeCacheAge(cachePath = CACHE_PATH, now = Date.now(), readFile = readFileSync) {
-  try {
-    const obj = JSON.parse(readFile(cachePath, 'utf8'));
-    if (typeof obj.ts !== 'number') return null;
-    return Math.max(0, now - obj.ts);
-  } catch {
-    return null;
-  }
-}
-
 function main() {
   const cwd = process.cwd();
   const cfg = loadConfig(cwd);
 
-  const tokenPresent = getToken() !== null;
+  const tokenPresent = probeTokenPresent();
   const cacheAgeMs = probeCacheAge();
   const statusLineWired = probeStatusLineWired();
   const historyCount = readHistory(HISTORY_PATH).length;
