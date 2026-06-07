@@ -295,6 +295,21 @@ test('loadConfig: invalid projectionDisplay falls back to off', () => {
   assert.equal(loadConfig('/proj', readFile, noEnv).projectionDisplay, 'off');
 });
 
+test('loadConfig: notifications defaults to off', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, noEnv).notifications, 'off');
+});
+
+test('loadConfig: reads CLAUDE_PLUGIN_OPTION_NOTIFICATIONS', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_NOTIFICATIONS: 'on' }).notifications, 'on');
+});
+
+test('loadConfig: invalid notifications falls back to off', () => {
+  const readFile = () => JSON.stringify({ notifications: 'sometimes' });
+  assert.equal(loadConfig('/proj', readFile, noEnv).notifications, 'off');
+});
+
 // --- per-window thresholds ---
 
 test('loadConfig: thresholdFiveHour/thresholdSevenDay default to null', () => {

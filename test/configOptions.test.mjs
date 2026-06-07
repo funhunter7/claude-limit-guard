@@ -86,3 +86,16 @@ test('CONFIG_OPTIONS: projection_display maps to projectionDisplay / projection_
   assert.equal(CONFIG_OPTIONS.projection_display.type, 'enum');
   assert.deepEqual(CONFIG_OPTIONS.projection_display.choices, ['off', 'on']);
 });
+
+test('coerceOptionValue: notifications enum accepts off/on', () => {
+  assert.equal(coerceOptionValue('notifications', 'off'), 'off');
+  assert.equal(coerceOptionValue('notifications', 'on'), 'on');
+  assert.throws(() => coerceOptionValue('notifications', 'sometimes'), /off, on/);
+});
+
+test('CONFIG_OPTIONS: notifications maps to notifications / notifications', () => {
+  assert.equal(CONFIG_OPTIONS.notifications.projectKey, 'notifications');
+  assert.equal(CONFIG_OPTIONS.notifications.globalKey, 'notifications');
+  assert.equal(CONFIG_OPTIONS.notifications.type, 'enum');
+  assert.deepEqual(CONFIG_OPTIONS.notifications.choices, ['off', 'on']);
+});

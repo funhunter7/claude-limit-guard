@@ -10,6 +10,8 @@ import { formatStatusLine, resolveHour12, resolveStyle, resolveLocale } from '..
 import { breachedLimits, warnedLimits } from '../lib/threshold.mjs';
 import { getMessages } from '../lib/messages.mjs';
 import { shouldBlockStop as defaultShouldBlockStop } from '../lib/stopGuard.mjs';
+import { notify as defaultNotify } from '../lib/notify.mjs';
+import { shouldNotify as defaultShouldNotify } from '../lib/notifyGuard.mjs';
 
 export async function runCli(mode, cwd, deps = {}) {
   const {
@@ -26,6 +28,8 @@ export async function runCli(mode, cwd, deps = {}) {
     appendReading = defaultAppendReading,
     readHistory = defaultReadHistory,
     historyPath = HISTORY_PATH,
+    notify = defaultNotify,
+    shouldNotify = defaultShouldNotify,
   } = deps;
 
   const cfg = loadConfig(cwd);
@@ -93,7 +97,22 @@ export async function runCli(mode, cwd, deps = {}) {
 
   const line = formatStatusLine(usage, cfg.threshold, cfg.watch, { now: nowDate, locale, hour12, glyphs, warnBand: cfg.warnBand, labelStyle: cfg.labelStyle, resetDisplay: cfg.resetDisplay, thresholdOverrides: overrides, projectionDisplay: cfg.projectionDisplay, projection });
 
-  if (mode === '--statusline') return line;
+  if (mode === '--statusline') {
+    // Fire a desktop notification once per crossing (keyed cwd|window|resets_at|band) when
+    // enabled. The status line is the freshest, most frequent caller; gating by shouldNotify
+    // keeps it to one toast per crossing rather than one per render. All best-effort.
+    if (cfg.notifications === 'on' && usage && !usage.authError) {
+      const breachedNow = breachedLimits(usage, cfg.threshold, cfg.watch, overrides);
+      const warnedNow = warnedLimits(usage, cfg.warnBand, cfg.threshold, cfg.watch, overrides);
+      for (const key of breachedNow) {
+        if (shouldNotify(`${cwd}|${key}|${usage[key]?.resets_at || ''}|breach`)) notify(m.notifyTitle, m.notifyBreach(key));
+      }
+      for (const key of warnedNow) {
+        if (shouldNotify(`${cwd}|${key}|${usage[key]?.resets_at || ''}|warn`)) notify(m.notifyTitle, m.notifyWarn(key));
+      }
+    }
+    return line;
+  }
 
   const breached = breachedLimits(usage, cfg.threshold, cfg.watch, overrides);
 

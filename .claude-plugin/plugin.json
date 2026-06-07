@@ -61,6 +61,12 @@
       "title": "Burn-rate projection",
       "description": "Show a projected time-to-threshold segment (e.g. '📈 ~1h40m to 90%') based on recent usage trend: off or on (default off).",
       "default": "off"
+    },
+    "notifications": {
+      "type": "string",
+      "title": "Desktop notifications",
+      "description": "Pop up an OS notification once when a window enters the warn band or crosses the threshold: off or on (default off).",
+      "default": "off"
     }
   }
 }

@@ -22,6 +22,16 @@ test('getMessages: builders interpolate handoff path', () => {
   assert.match(getMessages('en-US').stopReason(95, '5h', 'ACT'), /over threshold 95% \(5h\)\. ACT/);
 });
 
+test('getMessages: notification strings name the window and band, both locales', () => {
+  const en = getMessages('en-US');
+  assert.match(en.notifyTitle, /claude-limit-guard/);
+  assert.match(en.notifyWarn('five_hour'), /five_hour/);
+  assert.match(en.notifyBreach('seven_day'), /seven_day/);
+  const cs = getMessages('cs-CZ');
+  assert.match(cs.notifyWarn('five_hour'), /five_hour/);
+  assert.match(cs.notifyBreach('seven_day'), /seven_day/);
+});
+
 test('getMessages: toThreshold word (en "to" / cs "do")', () => {
   assert.equal(getMessages('en-US').toThreshold, 'to');
   assert.equal(getMessages('cs-CZ').toThreshold, 'do');

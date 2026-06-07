@@ -49,10 +49,11 @@ const BREACH = { five_hour: { utilization: 96, resets_at: '2026-05-31T06:00:00+0
                  seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
 const NOW = new Date('2026-05-31T01:00:00+02:00');
 
-function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null, warnAction = null, warnBand = 80, timeFormat = '24', style = 'emoji', shouldBlockStop = () => true, stdinUsage = null, projectionDisplay = 'off', history = [], calls = {} } = {}) {
+function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null, warnAction = null, warnBand = 80, timeFormat = '24', style = 'emoji', shouldBlockStop = () => true, stdinUsage = null, projectionDisplay = 'off', history = [], notifications = 'off', shouldNotify = () => true, calls = {} } = {}) {
   calls.getUsage = 0;
   calls.wrote = null;
   calls.appended = null;
+  calls.notified = [];
   return {
     loadConfig: () => ({
       threshold: 95,
@@ -65,6 +66,7 @@ function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = nu
       timeFormat,
       style,
       projectionDisplay,
+      notifications,
     }),
     getUsage: async () => { calls.getUsage += 1; return usage; },
     handoffExists: () => handoffExists,
@@ -77,6 +79,9 @@ function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = nu
     appendReading: (_p, reading) => { calls.appended = reading; return true; },
     readHistory: () => history,
     historyPath: '/tmp/test-history.json',
+    // Inject the notifier so tests capture toasts instead of spawning OS commands.
+    notify: (title, message) => { calls.notified.push({ title, message }); },
+    shouldNotify,
   };
 }
 
@@ -293,4 +298,39 @@ test('runCli --statusline: projection on but flat history -> no trend segment', 
   const history = [{ ts: now - 60000, five_hour: 72 }, { ts: now, five_hour: 72 }];
   const out = await runCli('--statusline', '/proj', deps(SAMPLE, { stdinUsage: SAMPLE, projectionDisplay: 'on', history }));
   assert.doesNotMatch(out, /📈/);
+});
+
+// --- C1: OS notifications ---
+test('runCli --statusline: notifications on + breach -> breach toast fired', async () => {
+  const calls = {};
+  await runCli('--statusline', '/proj', deps(BREACH, { stdinUsage: BREACH, notifications: 'on', calls }));
+  assert.equal(calls.notified.length, 1);
+  assert.match(calls.notified[0].message, /five_hour/);
+  assert.match(calls.notified[0].message, /threshold/i);
+});
+
+test('runCli --statusline: notifications on + warn band -> warn toast fired', async () => {
+  const calls = {};
+  await runCli('--statusline', '/proj', deps(WARN, { stdinUsage: WARN, notifications: 'on', calls }));
+  assert.equal(calls.notified.length, 1);
+  assert.match(calls.notified[0].message, /five_hour/);
+  assert.match(calls.notified[0].message, /Approaching/i);
+});
+
+test('runCli --statusline: notifications on but all green -> no toast', async () => {
+  const calls = {};
+  await runCli('--statusline', '/proj', deps(SAMPLE, { stdinUsage: SAMPLE, notifications: 'on', calls }));
+  assert.equal(calls.notified.length, 0);
+});
+
+test('runCli --statusline: notifications off -> no toast even on breach', async () => {
+  const calls = {};
+  await runCli('--statusline', '/proj', deps(BREACH, { stdinUsage: BREACH, notifications: 'off', calls }));
+  assert.equal(calls.notified.length, 0);
+});
+
+test('runCli --statusline: shouldNotify false (already notified) -> no repeat toast', async () => {
+  const calls = {};
+  await runCli('--statusline', '/proj', deps(BREACH, { stdinUsage: BREACH, notifications: 'on', shouldNotify: () => false, calls }));
+  assert.equal(calls.notified.length, 0);
 });
