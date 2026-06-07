@@ -74,7 +74,7 @@ test('formatReset: missing/invalid -> empty string', () => {
   assert.equal(formatReset('not-a-date', { now }), '');
 });
 
-import { formatLimit, formatStatusLine } from '../lib/format.mjs';
+import { formatLimit, formatStatusLine, formatProjection } from '../lib/format.mjs';
 import { readFileSync } from 'node:fs';
 
 const SAMPLE = JSON.parse(readFileSync(new URL('./fixtures/usage-sample.json', import.meta.url)));
@@ -359,4 +359,32 @@ test('formatStatusLine: thresholdOverrides only affects the targeted window', ()
   // five_hour uses override 80 -> 85 >= 80 -> red; seven_day uses global 95 -> 85 < 95 -> amber
   assert.match(out, /^🔴/, 'five_hour should be red');
   assert.match(out, /🟡 Week Limit/, 'seven_day should be amber');
+});
+
+test('formatProjection: minutes+threshold -> trend segment (en)', () => {
+  assert.equal(formatProjection(100, 90, { locale: 'en-US' }), '📈 ~1h40m to 90%');
+  assert.equal(formatProjection(8, 90, { locale: 'en-US' }), '📈 ~8m to 90%');
+  assert.equal(formatProjection(120, 80, { locale: 'en-US' }), '📈 ~2h to 80%');
+});
+
+test('formatProjection: cs uses "do"', () => {
+  assert.equal(formatProjection(100, 90, { locale: 'cs-CZ' }), '📈 ~1h40m do 90%');
+});
+
+test('formatProjection: null minutes -> empty string', () => {
+  assert.equal(formatProjection(null, 90, { locale: 'en-US' }), '');
+});
+
+test('formatStatusLine: projection on appends trend segment', () => {
+  const line = formatStatusLine(SAMPLE, 95, ['five_hour', 'seven_day'], {
+    now: NOW, locale: 'en-US', projectionDisplay: 'on', projection: { minutes: 100, threshold: 90 },
+  });
+  assert.match(line, /📈 ~1h40m to 90%$/);
+});
+
+test('formatStatusLine: projection off (default) omits trend segment', () => {
+  const line = formatStatusLine(SAMPLE, 95, ['five_hour', 'seven_day'], {
+    now: NOW, locale: 'en-US', projection: { minutes: 100, threshold: 90 },
+  });
+  assert.doesNotMatch(line, /📈/);
 });

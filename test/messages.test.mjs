@@ -21,3 +21,9 @@ test('getMessages: builders interpolate handoff path', () => {
   assert.match(getMessages('en-US').resume('.claude/RESUME.md'), /\.claude\/RESUME\.md/);
   assert.match(getMessages('en-US').stopReason(95, '5h', 'ACT'), /over threshold 95% \(5h\)\. ACT/);
 });
+
+test('getMessages: toThreshold word (en "to" / cs "do")', () => {
+  assert.equal(getMessages('en-US').toThreshold, 'to');
+  assert.equal(getMessages('cs-CZ').toThreshold, 'do');
+  assert.equal(getMessages('de-DE').toThreshold, 'to'); // fallback
+});

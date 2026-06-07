@@ -55,6 +55,12 @@
       "title": "Reset countdown display",
       "description": "How the reset time appears: clock (e.g. '→ 06:00'), relative (e.g. '→ in 2h13m'), or both (e.g. '→ 06:00 (in 2h13m)').",
       "default": "clock"
+    },
+    "projection_display": {
+      "type": "string",
+      "title": "Burn-rate projection",
+      "description": "Show a projected time-to-threshold segment (e.g. '📈 ~1h40m to 90%') based on recent usage trend: off or on (default off).",
+      "default": "off"
     }
   }
 }
