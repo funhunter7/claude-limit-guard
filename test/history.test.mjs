@@ -73,3 +73,38 @@ test('appendReading: never throws, returns false on write failure', () => {
   assert.doesNotThrow(() => { ok = appendReading('x', { ts: BASE, five_hour: 1 }, 30, { readFile, writeFile }); });
   assert.equal(ok, false);
 });
+
+test('appendReading: throttles when the last reading is newer than minIntervalMs', () => {
+  let stored = JSON.stringify([{ ts: BASE, five_hour: 1 }]);
+  const readFile = () => stored;
+  const writeFile = (_p, data) => { stored = data; };
+  // 30s after the last reading, with a 60s throttle -> skipped, nothing written.
+  const ok = appendReading('x', { ts: BASE + 30000, five_hour: 2 }, 30, { readFile, writeFile, minIntervalMs: 60000 });
+  assert.equal(ok, false);
+  assert.deepEqual(JSON.parse(stored), [{ ts: BASE, five_hour: 1 }]);
+  // 90s after -> appended.
+  const ok2 = appendReading('x', { ts: BASE + 90000, five_hour: 3 }, 30, { readFile, writeFile, minIntervalMs: 60000 });
+  assert.equal(ok2, true);
+  assert.equal(JSON.parse(stored).length, 2);
+});
+
+test('projectMinutesToThreshold: ignores readings before a window reset (large drop)', () => {
+  // Old window climbs to 90, resets (90 -> 5), then climbs 1%/min from 5. Fit only the
+  // post-reset segment: 7 -> 90 at ~1%/min ≈ 83 min, NOT a fit polluted by the pre-reset run.
+  const h = [
+    { ts: BASE, five_hour: 80 },
+    { ts: BASE + 60000, five_hour: 85 },
+    { ts: BASE + 120000, five_hour: 90 },
+    { ts: BASE + 180000, five_hour: 5 }, // reset
+    { ts: BASE + 240000, five_hour: 6 },
+    { ts: BASE + 300000, five_hour: 7 },
+  ];
+  const m = projectMinutesToThreshold(h, 'five_hour', 90, BASE + 300000);
+  assert.ok(m != null && Math.abs(m - 83) <= 2, `expected ~83, got ${m}`);
+});
+
+test('projectMinutesToThreshold: too-short time span -> null (avoids noisy extrapolation)', () => {
+  // Two readings only 30s apart, rising fast: span < 2 min -> refuse to project.
+  const h = [{ ts: BASE, five_hour: 80 }, { ts: BASE + 30000, five_hour: 82 }];
+  assert.equal(projectMinutesToThreshold(h, 'five_hour', 90, BASE + 30000), null);
+});
