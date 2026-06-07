@@ -74,6 +74,21 @@ test('formatReset: missing/invalid -> empty string', () => {
   assert.equal(formatReset('not-a-date', { now }), '');
 });
 
+test('formatReset: explicit timeZone makes output deterministic regardless of system TZ', () => {
+  const now = new Date('2026-05-31T00:00:00Z'); // 09:00 Tokyo, May 31
+  // 04:00 UTC rendered in Tokyo (UTC+9) is 13:00 same day
+  assert.equal(formatReset('2026-05-31T04:00:00Z', { now, locale: 'en-US', timeZone: 'Asia/Tokyo' }), '→ 13:00');
+});
+
+test('formatReset: explicit timeZone, cross-day in that zone', () => {
+  const now = new Date('2026-05-31T00:00:00Z'); // 09:00 Tokyo, May 31
+  // 2026-06-03 01:00 UTC = 10:00 Tokyo, Wednesday, different day
+  assert.equal(
+    formatReset('2026-06-03T01:00:00Z', { now, locale: 'en-US', timeZone: 'Asia/Tokyo' }),
+    '→ Wednesday 6/3/2026 10:00'
+  );
+});
+
 import { formatLimit, formatStatusLine, formatProjection } from '../lib/format.mjs';
 import { readFileSync } from 'node:fs';
 
@@ -99,15 +114,15 @@ test('formatStatusLine: both limits joined by middot', () => {
 test('formatStatusLine: locale switches weekday language', () => {
   assert.equal(
     formatStatusLine(SAMPLE, 95, ['seven_day'], { now: NOW, locale: 'de-DE' }),
-    '🟢 Week Limit: 39% → Mittwoch 3/6/2026 10:00'
+    '🟢 Wochenlimit: 39% → Mittwoch 3/6/2026 10:00'
   );
 });
 
-test('formatStatusLine: labels localize by locale (Czech for cs, English fallback)', () => {
+test('formatStatusLine: labels localize by locale (Czech for cs, English fallback for unsupported)', () => {
   const cs = formatStatusLine(SAMPLE, 95, ['five_hour', 'seven_day'], { now: NOW, locale: 'cs-CZ' });
   assert.match(cs, /🟢 Limit relace: 72% .* · 🟢 Týdenní limit: 39%/);
-  // de has no message set -> labels fall back to English
-  assert.match(formatStatusLine(SAMPLE, 95, ['five_hour'], { now: NOW, locale: 'de-DE' }), /🟢 Limit session: 72%/);
+  // is-IS is unsupported -> labels fall back to English
+  assert.match(formatStatusLine(SAMPLE, 95, ['five_hour'], { now: NOW, locale: 'is-IS' }), /🟢 Limit session: 72%/);
 });
 
 test('formatStatusLine: respects watch list', () => {
