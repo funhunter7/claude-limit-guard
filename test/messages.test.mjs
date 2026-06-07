@@ -32,6 +32,15 @@ test('notifyReset names the window', () => {
   assert.match(getMessages('cs-CZ').notifyReset('five_hour'), /five_hour/);
 });
 
+test('snooze strings present in en/cs', () => {
+  for (const loc of ['en-US', 'cs-CZ']) {
+    const m = getMessages(loc);
+    assert.match(m.snoozeSet('18:00'), /18:00/);
+    assert.equal(typeof m.snoozeCleared, 'string');
+    assert.equal(typeof m.snoozeNone, 'string');
+  }
+});
+
 test('getMessages: en-US -> english', () => {
   assert.equal(getMessages('en-US').signIn, 'sign in');
   assert.match(getMessages('en-US').contextLabel('LINE', 95), /Threshold 95%/);

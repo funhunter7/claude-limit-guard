@@ -13,6 +13,7 @@ import { getMessages } from '../lib/messages.mjs';
 import { shouldBlockStop as defaultShouldBlockStop } from '../lib/stopGuard.mjs';
 import { notify as defaultNotify } from '../lib/notify.mjs';
 import { shouldNotify as defaultShouldNotify } from '../lib/notifyGuard.mjs';
+import { snoozeUntil as defaultSnoozeUntil } from '../lib/snoozeGuard.mjs';
 
 export async function runCli(mode, cwd, deps = {}) {
   const {
@@ -33,6 +34,7 @@ export async function runCli(mode, cwd, deps = {}) {
     shouldNotify = defaultShouldNotify,
     appendUsage = defaultAppendUsage,
     usageLogPath = USAGE_LOG_PATH,
+    snoozeUntil = defaultSnoozeUntil,
   } = deps;
 
   const cfg = loadConfig(cwd);
@@ -69,6 +71,9 @@ export async function runCli(mode, cwd, deps = {}) {
   const hour12 = resolveHour12(cfg.timeFormat);
   const nowDate = now();
   const nowMs = nowDate.getTime();
+  // When snoozed (/limit-guard-snooze), suppress the guard/context directives until the
+  // snooze expires. The status line and notifications are unaffected.
+  const snoozed = snoozeUntil(nowMs) != null;
 
   // Build per-window threshold overrides from config (only set when non-null).
   const overrides = {};
@@ -141,22 +146,25 @@ export async function runCli(mode, cwd, deps = {}) {
 
   if (mode === '--context') {
     let ctx = m.contextLabel(line, cfg.threshold);
-    if (breached.length) {
-      const action = cfg.guardAction || m.contextAction(cfg.handoff);
-      ctx += ' ' + m.breach(breached.join(', '), action);
-    } else {
-      // Pass the same per-window overrides so the warn band's upper bound matches each
-      // window's effective threshold (a looser per-window threshold still warns up to it).
-      const warned = warnedLimits(usage, cfg.warnBand, cfg.threshold, cfg.watch, overrides);
-      if (warned.length) {
-        const action = cfg.warnAction || m.warnAction;
-        ctx += ' ' + m.warn(warned.join(', '), action);
+    if (!snoozed) {
+      if (breached.length) {
+        const action = cfg.guardAction || m.contextAction(cfg.handoff);
+        ctx += ' ' + m.breach(breached.join(', '), action);
+      } else {
+        // Pass the same per-window overrides so the warn band's upper bound matches each
+        // window's effective threshold (a looser per-window threshold still warns up to it).
+        const warned = warnedLimits(usage, cfg.warnBand, cfg.threshold, cfg.watch, overrides);
+        if (warned.length) {
+          const action = cfg.warnAction || m.warnAction;
+          ctx += ' ' + m.warn(warned.join(', '), action);
+        }
       }
     }
     return JSON.stringify({ hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: ctx } });
   }
 
   if (mode === '--stop') {
+    if (snoozed) return '{}';
     if (breached.length && !hoExists()) {
       // Scope the one-shot marker to this project so blocking in one project does not
       // suppress the guard in another that breaches in the same reset window.
