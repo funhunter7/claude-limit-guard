@@ -92,3 +92,10 @@ test('commands/limit-guard-doctor.md: drives bin/doctor.mjs via CLAUDE_PLUGIN_RO
   assert.match(md, /\$\{CLAUDE_PLUGIN_ROOT\}\/bin\/doctor\.mjs/, 'must invoke bin/doctor.mjs');
   assert.match(md, /Communicate with the user exclusively in Czech/, 'must instruct Czech');
 });
+
+test('commands/limit-guard-setup.md: drives bin/setup.mjs via CLAUDE_PLUGIN_ROOT, Czech', () => {
+  const md = readFileSync(join(root, 'commands/limit-guard-setup.md'), 'utf8');
+  assert.match(md, /allowed-tools:.*Bash/, 'must allow Bash');
+  assert.match(md, /\$\{CLAUDE_PLUGIN_ROOT\}\/bin\/setup\.mjs/, 'must invoke bin/setup.mjs');
+  assert.match(md, /Communicate with the user exclusively in Czech/, 'must instruct Czech');
+});
