@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/funhunter7/claude-limit-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/funhunter7/claude-limit-guard/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-0.6.0-brightgreen)
+![Version](https://img.shields.io/badge/version-0.10.0-brightgreen)
 ![Node](https://img.shields.io/badge/node-%E2%89%A518-339933?logo=node.js&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Windows%20·%20macOS%20·%20Linux-lightgrey)
 
@@ -104,8 +104,25 @@ Use the absolute path to `bin/usage.mjs`. On macOS/Linux use a normal POSIX path
 | **`/limit-guard-action`** | Set or clear the **guard action** (at the threshold) or the **warn action** (in the warn band), globally or per-project. |
 | **`/limit-guard-status`** | Print the resolved config plus a health snapshot — token, status-line cache age, whether the status line is wired, and burn-rate history readings. |
 | **`/limit-guard-stats`** | Summarize recent usage from the rolling ~7-day log: number of readings, peak 5h/7d utilization, and reset count. |
+| **`/limit-guard-doctor`** | Run a self-check — Node version, OAuth token, whether the status line is wired, cache freshness, and installed-vs-latest plugin version — with a fix hint for anything failing. |
+| **`/limit-guard-setup`** | Auto-wire the status line into `~/.claude/settings.json` (backing up the previous file first). Idempotent — a no-op when it's already wired. |
+| **`/limit-guard-snooze`** | Temporarily pause the guard's stop/handoff directives until the next reset (`/limit-guard-snooze clear` cancels early). The status line and notifications keep working. |
 
 Both write through a validated helper that preserves your other settings.
+
+<!-- Awesome badge: flip on once accepted into an Awesome list.
+[![Mentioned in Awesome Claude Code](https://awesome.re/mentioned-badge.svg)](https://github.com/hesreallyhim/awesome-claude-code)
+-->
+
+### Languages
+
+The status line, context directives, and command output are localized by your OS locale. English and
+Czech are first-class; **German, Spanish, French, Italian, Polish, Slovak, Ukrainian, Russian,
+Japanese, Chinese, Korean, Portuguese, Dutch, and Turkish** ship as best-effort translations (any
+missing string falls back to English). Improvements via PR are welcome.
+
+When `notifications` is `on`, a one-shot toast also fires when a watched window **resets**, so you
+know the moment you're clear to go full speed again.
 
 ## Configuration
 
