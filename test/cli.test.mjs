@@ -82,6 +82,9 @@ function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = nu
     // Inject the notifier so tests capture toasts instead of spawning OS commands.
     notify: (title, message) => { calls.notified.push({ title, message }); },
     shouldNotify,
+    // Inject the usage log so tests never write to ~/.claude.
+    appendUsage: (_p, reading) => { calls.loggedUsage = reading; return true; },
+    usageLogPath: '/tmp/test-usage.jsonl',
   };
 }
 
@@ -279,6 +282,13 @@ test('runCli --statusline: appends a history reading with watched utilizations',
   assert.equal(calls.appended.five_hour, 72);
   assert.equal(calls.appended.seven_day, 39);
   assert.doesNotMatch(out, /📈/); // projection off by default
+});
+
+test('runCli --statusline: also records the reading in the long-lived usage log', async () => {
+  const calls = {};
+  await runCli('--statusline', '/proj', deps(SAMPLE, { stdinUsage: SAMPLE, calls }));
+  assert.equal(calls.loggedUsage.ts, NOW.getTime());
+  assert.equal(calls.loggedUsage.five_hour, 72);
 });
 
 test('runCli --statusline: projection on appends trend segment from rising history', async () => {

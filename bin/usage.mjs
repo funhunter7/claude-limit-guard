@@ -5,6 +5,7 @@ import { loadConfig as defaultLoadConfig } from '../lib/config.mjs';
 import { getUsage as defaultGetUsage, CACHE_PATH } from '../lib/usage.mjs';
 import { writeCache as defaultWriteCache } from '../lib/cache.mjs';
 import { appendReading as defaultAppendReading, readHistory as defaultReadHistory, projectMinutesToThreshold, HISTORY_PATH, HISTORY_MIN_INTERVAL_MS } from '../lib/history.mjs';
+import { appendUsage as defaultAppendUsage, USAGE_LOG_PATH } from '../lib/usageLog.mjs';
 import { coversWatched, usageFromRateLimits } from '../lib/stdinUsage.mjs';
 import { formatStatusLine, resolveHour12, resolveStyle, resolveLocale } from '../lib/format.mjs';
 import { breachedLimits, warnedLimits } from '../lib/threshold.mjs';
@@ -30,6 +31,8 @@ export async function runCli(mode, cwd, deps = {}) {
     historyPath = HISTORY_PATH,
     notify = defaultNotify,
     shouldNotify = defaultShouldNotify,
+    appendUsage = defaultAppendUsage,
+    usageLogPath = USAGE_LOG_PATH,
   } = deps;
 
   const cfg = loadConfig(cwd);
@@ -81,6 +84,7 @@ export async function runCli(mode, cwd, deps = {}) {
       if (typeof u === 'number') reading[key] = u;
     }
     appendReading(historyPath, reading, 30, { minIntervalMs: HISTORY_MIN_INTERVAL_MS }); // never throws; throttled to 1/min
+    appendUsage(usageLogPath, reading, nowMs); // long-lived ~7-day stats log; throttled to 1/min
   }
 
   // Optional projection (opt-in): minutes until the soonest watched window hits its
