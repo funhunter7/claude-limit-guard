@@ -1,6 +1,31 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { getMessages } from '../lib/messages.mjs';
+import en from '../lib/messages/en.mjs';
+
+const LOCALES = ['cs', 'de', 'es', 'fr', 'it', 'pl', 'sk', 'uk', 'ru', 'ja', 'zh', 'ko', 'pt', 'nl', 'tr'];
+
+test('every locale defines the full en key set', async () => {
+  const enKeys = Object.keys(en).sort();
+  for (const lang of LOCALES) {
+    const mod = (await import(`../lib/messages/${lang}.mjs`)).default;
+    assert.deepEqual(Object.keys(mod).sort(), enKeys, `${lang} key set differs from en`);
+  }
+});
+
+test('label sub-objects carry all window keys in every locale', async () => {
+  const labelKeys = Object.keys(en.labels).sort();
+  const shortKeys = Object.keys(en.labelsShort).sort();
+  for (const lang of LOCALES) {
+    const mod = (await import(`../lib/messages/${lang}.mjs`)).default;
+    assert.deepEqual(Object.keys(mod.labels).sort(), labelKeys, `${lang} labels keys differ`);
+    assert.deepEqual(Object.keys(mod.labelsShort).sort(), shortKeys, `${lang} labelsShort keys differ`);
+  }
+});
+
+test('getMessages: de-DE -> german label (spot check)', () => {
+  assert.equal(getMessages('de-DE').labels.five_hour, 'Sitzungslimit:');
+});
 
 test('getMessages: en-US -> english', () => {
   assert.equal(getMessages('en-US').signIn, 'sign in');
@@ -13,7 +38,8 @@ test('getMessages: cs-CZ -> czech (verbatim legacy strings)', () => {
 });
 
 test('getMessages: unknown locale falls back to english', () => {
-  assert.equal(getMessages('de-DE').signIn, 'sign in');
+  // is-IS (Icelandic) is intentionally not a supported locale.
+  assert.equal(getMessages('is-IS').signIn, 'sign in');
   assert.equal(getMessages(undefined).signIn, 'sign in');
 });
 
@@ -35,7 +61,7 @@ test('getMessages: notification strings name the window and band, both locales',
 test('getMessages: toThreshold word (en "to" / cs "do")', () => {
   assert.equal(getMessages('en-US').toThreshold, 'to');
   assert.equal(getMessages('cs-CZ').toThreshold, 'do');
-  assert.equal(getMessages('de-DE').toThreshold, 'to'); // fallback
+  assert.equal(getMessages('is-IS').toThreshold, 'to'); // fallback (unsupported locale)
 });
 
 test('getMessages: en handoff directives name branch, files and next step', () => {

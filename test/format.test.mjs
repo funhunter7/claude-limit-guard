@@ -114,15 +114,15 @@ test('formatStatusLine: both limits joined by middot', () => {
 test('formatStatusLine: locale switches weekday language', () => {
   assert.equal(
     formatStatusLine(SAMPLE, 95, ['seven_day'], { now: NOW, locale: 'de-DE' }),
-    '🟢 Week Limit: 39% → Mittwoch 3/6/2026 10:00'
+    '🟢 Wochenlimit: 39% → Mittwoch 3/6/2026 10:00'
   );
 });
 
-test('formatStatusLine: labels localize by locale (Czech for cs, English fallback)', () => {
+test('formatStatusLine: labels localize by locale (Czech for cs, English fallback for unsupported)', () => {
   const cs = formatStatusLine(SAMPLE, 95, ['five_hour', 'seven_day'], { now: NOW, locale: 'cs-CZ' });
   assert.match(cs, /🟢 Limit relace: 72% .* · 🟢 Týdenní limit: 39%/);
-  // de has no message set -> labels fall back to English
-  assert.match(formatStatusLine(SAMPLE, 95, ['five_hour'], { now: NOW, locale: 'de-DE' }), /🟢 Limit session: 72%/);
+  // is-IS is unsupported -> labels fall back to English
+  assert.match(formatStatusLine(SAMPLE, 95, ['five_hour'], { now: NOW, locale: 'is-IS' }), /🟢 Limit session: 72%/);
 });
 
 test('formatStatusLine: respects watch list', () => {
