@@ -344,3 +344,21 @@ test('runCli --statusline: shouldNotify false (already notified) -> no repeat to
   await runCli('--statusline', '/proj', deps(BREACH, { stdinUsage: BREACH, notifications: 'on', shouldNotify: () => false, calls }));
   assert.equal(calls.notified.length, 0);
 });
+
+test('runCli --statusline: notifications on + a window reset -> reset toast', async () => {
+  // previous reading high (88), current stdin low (5) => five_hour reset
+  const reset = { five_hour: { utilization: 5, resets_at: '2026-05-31T06:00:00+02:00' },
+                  seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
+  const history = [{ ts: 1, five_hour: 88, seven_day: 39 }];
+  const calls = {};
+  await runCli('--statusline', '/proj', deps(reset, { stdinUsage: reset, notifications: 'on', history, calls }));
+  assert.ok(calls.notified.some((n) => /reset|obnovil/i.test(n.message) && /five_hour/.test(n.message)));
+});
+
+test('runCli --statusline: notifications on, no prior history -> no reset toast', async () => {
+  const reset = { five_hour: { utilization: 5, resets_at: '2026-05-31T06:00:00+02:00' },
+                  seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
+  const calls = {};
+  await runCli('--statusline', '/proj', deps(reset, { stdinUsage: reset, notifications: 'on', history: [], calls }));
+  assert.equal(calls.notified.length, 0);
+});

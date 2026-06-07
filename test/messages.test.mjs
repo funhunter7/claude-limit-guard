@@ -27,6 +27,11 @@ test('getMessages: de-DE -> german label (spot check)', () => {
   assert.equal(getMessages('de-DE').labels.five_hour, 'Sitzungslimit:');
 });
 
+test('notifyReset names the window', () => {
+  assert.match(getMessages('en-US').notifyReset('five_hour'), /five_hour/);
+  assert.match(getMessages('cs-CZ').notifyReset('five_hour'), /five_hour/);
+});
+
 test('getMessages: en-US -> english', () => {
   assert.equal(getMessages('en-US').signIn, 'sign in');
   assert.match(getMessages('en-US').contextLabel('LINE', 95), /Threshold 95%/);

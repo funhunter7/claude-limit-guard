@@ -77,7 +77,17 @@ export async function runCli(mode, cwd, deps = {}) {
 
   // Burn-rate history: record one reading per status-line render (fire-and-forget, like the
   // cache write) so the projection has a trend to fit. Only the status line writes history.
+  // When notifications are on, snapshot the prior readings BEFORE appending this render's
+  // reading, so reset detection compares the current value against history rather than the
+  // value we just wrote.
+  let prevByKey = null;
   if (mode === '--statusline' && usage && !usage.authError) {
+    if (cfg.notifications === 'on') {
+      prevByKey = {};
+      for (const r of readHistory(historyPath)) {
+        for (const key of cfg.watch) if (typeof r[key] === 'number') prevByKey[key] = r[key];
+      }
+    }
     const reading = { ts: nowMs };
     for (const key of cfg.watch) {
       const u = usage[key]?.utilization;
@@ -106,6 +116,15 @@ export async function runCli(mode, cwd, deps = {}) {
     // enabled. The status line is the freshest, most frequent caller; gating by shouldNotify
     // keeps it to one toast per crossing rather than one per render. All best-effort.
     if (cfg.notifications === 'on' && usage && !usage.authError) {
+      // Reset toast: a watched window dropping sharply versus its prior reading means the
+      // window rolled over (e.g. 88% -> 5%). One-shot per (cwd|window|new resets_at).
+      for (const key of cfg.watch) {
+        const cur = usage[key]?.utilization;
+        const prev = prevByKey?.[key];
+        if (typeof cur === 'number' && typeof prev === 'number' && cur < prev - 15) {
+          if (shouldNotify(`${cwd}|${key}|${usage[key]?.resets_at || ''}|reset`)) notify(m.notifyTitle, m.notifyReset(key));
+        }
+      }
       const breachedNow = breachedLimits(usage, cfg.threshold, cfg.watch, overrides);
       const warnedNow = warnedLimits(usage, cfg.warnBand, cfg.threshold, cfg.watch, overrides);
       for (const key of breachedNow) {
