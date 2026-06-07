@@ -24,6 +24,17 @@ test('appendUsage: appends a line when enough time has passed', () => {
   assert.equal(readUsageLog('x', () => stored).length, 2);
 });
 
+test('appendUsage: cheap-skips via recent file mtime without reading the whole log', () => {
+  let readCalled = false;
+  const ok = appendUsage('x', { ts: BASE, five_hour: 1 }, BASE, {
+    statFile: () => BASE - 30000, // last modified 30s ago, under the 60s throttle
+    readFile: () => { readCalled = true; return ''; },
+    writeFile: () => {},
+  });
+  assert.equal(ok, false);
+  assert.equal(readCalled, false); // did not parse the log at all
+});
+
 test('appendUsage: throttles within the minimum interval', () => {
   let stored = `${JSON.stringify({ ts: BASE, five_hour: 10 })}\n`;
   const readFile = () => stored;
