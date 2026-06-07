@@ -144,3 +144,44 @@ test('renderStatus: shows watched windows in output', () => {
   assert.match(out, /five_hour/);
   assert.match(out, /seven_day/);
 });
+
+// --- v0.8 options shown ---
+
+test('renderStatus: shows warnAction, per-window thresholds and projectionDisplay', () => {
+  const out = renderStatus(
+    { threshold: 90, watch: ['five_hour', 'seven_day'], locale: 'en-US',
+      warnAction: 'Wrap up the step.', thresholdFiveHour: 80, thresholdSevenDay: null,
+      projectionDisplay: 'on' },
+    { tokenPresent: true, cacheAgeMs: null, statusLineWired: true },
+  );
+  assert.match(out, /warnAction.*Wrap up the step/);
+  assert.match(out, /thresholdFiveHour.*80/);
+  assert.match(out, /thresholdSevenDay.*-/);
+  assert.match(out, /projectionDisplay.*on/);
+});
+
+test('renderStatus: default warnAction shows the localized default label', () => {
+  const out = renderStatus(
+    { threshold: 90, watch: ['five_hour'], locale: 'cs-CZ', warnAction: null },
+    { tokenPresent: true, cacheAgeMs: null, statusLineWired: true },
+  );
+  assert.match(out, /warnAction.*výchozí/);
+});
+
+// --- history health line ---
+
+test('renderStatus (en): history readings count shown', () => {
+  const out = renderStatus(
+    { threshold: 90, watch: ['five_hour'], locale: 'en-US' },
+    { tokenPresent: true, cacheAgeMs: null, statusLineWired: true, historyCount: 7 },
+  );
+  assert.match(out, /history.*7/i);
+});
+
+test('renderStatus (en): no history -> no-data wording', () => {
+  const out = renderStatus(
+    { threshold: 90, watch: ['five_hour'], locale: 'en-US' },
+    { tokenPresent: true, cacheAgeMs: null, statusLineWired: true, historyCount: 0 },
+  );
+  assert.match(out, /history.*no data/i);
+});
