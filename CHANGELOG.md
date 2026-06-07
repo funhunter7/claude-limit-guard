@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.10.0 — 2026-06-07
+
+- **Reset notification.** With `notifications` on, a one-shot OS toast now also fires when a watched
+  window resets (a sharp drop vs. the previous reading), so you know the moment you're clear again.
+- **`/limit-guard-doctor`.** A self-check command: Node ≥ 18, OAuth token present, status line wired,
+  usage cache fresh, and installed-vs-latest plugin version — each with a fix hint when it fails.
+  Health probes were extracted into `lib/health.mjs` and shared with `/limit-guard-status`.
+- **`/limit-guard-setup`.** Auto-wires the status line into `~/.claude/settings.json`, backing up the
+  previous file first; idempotent (a no-op when already wired) and preserves other settings keys.
+- **`/limit-guard-snooze`.** Temporarily pauses the guard's stop/handoff directives until the next
+  reset (`clear` cancels early). The status line and notifications keep working while snoozed.
+- **14 new languages.** Messages are now split into per-language modules under `lib/messages/`, adding
+  best-effort de, es, fr, it, pl, sk, uk, ru, ja, zh, ko, pt, nl, tr (en + cs remain first-class);
+  any missing key falls back to English, enforced by a structural key-set test.
+- **Timezone-independent formatting tests.** The formatting helpers accept an optional explicit
+  `timeZone`, letting the clock/date tests be deterministic without relying on the `TZ` CI pin.
+
 ## 0.9.0 — 2026-06-07
 
 - **Desktop notifications (opt-in).** New `notifications` option (`off` | `on`, default `off`).
