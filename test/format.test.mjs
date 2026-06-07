@@ -388,3 +388,15 @@ test('formatStatusLine: projection off (default) omits trend segment', () => {
   });
   assert.doesNotMatch(line, /📈/);
 });
+
+test('formatStatusLine: per-model opus/sonnet windows render with their labels', () => {
+  const u = {
+    seven_day_opus: { utilization: 50, resets_at: '2026-06-03T10:00:00+02:00' },
+    seven_day_sonnet: { utilization: 12, resets_at: '2026-06-03T10:00:00+02:00' },
+  };
+  const en = formatStatusLine(u, 95, ['seven_day_opus', 'seven_day_sonnet'], { now: NOW, locale: 'en-US' });
+  assert.match(en, /Week Opus: 50%/);
+  assert.match(en, /Week Sonnet: 12%/);
+  const csShort = formatStatusLine(u, 95, ['seven_day_opus'], { now: NOW, locale: 'cs-CZ', labelStyle: 'short' });
+  assert.match(csShort, /7dO 50%/);
+});
