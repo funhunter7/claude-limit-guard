@@ -74,6 +74,21 @@ test('formatReset: missing/invalid -> empty string', () => {
   assert.equal(formatReset('not-a-date', { now }), '');
 });
 
+test('formatReset: explicit timeZone makes output deterministic regardless of system TZ', () => {
+  const now = new Date('2026-05-31T00:00:00Z'); // 09:00 Tokyo, May 31
+  // 04:00 UTC rendered in Tokyo (UTC+9) is 13:00 same day
+  assert.equal(formatReset('2026-05-31T04:00:00Z', { now, locale: 'en-US', timeZone: 'Asia/Tokyo' }), '→ 13:00');
+});
+
+test('formatReset: explicit timeZone, cross-day in that zone', () => {
+  const now = new Date('2026-05-31T00:00:00Z'); // 09:00 Tokyo, May 31
+  // 2026-06-03 01:00 UTC = 10:00 Tokyo, Wednesday, different day
+  assert.equal(
+    formatReset('2026-06-03T01:00:00Z', { now, locale: 'en-US', timeZone: 'Asia/Tokyo' }),
+    '→ Wednesday 6/3/2026 10:00'
+  );
+});
+
 import { formatLimit, formatStatusLine, formatProjection } from '../lib/format.mjs';
 import { readFileSync } from 'node:fs';
 
