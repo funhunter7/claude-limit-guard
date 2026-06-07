@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.8.0 — 2026-06-07
+
+- **Two-stage guard — `warn_action`.** Below the blocking threshold, when a watched window
+  enters the warn band (`warn_band ≤ util < threshold`), the `UserPromptSubmit` hook now
+  appends a gentle, **non-blocking** notice (`APPROACHING LIMIT (…)` / `BLÍŽÍ SE LIMIT (…)`).
+  The hard Stop block still fires only at the threshold. Configurable via `warn_action`
+  (mirrors `guard_action`); `/limit-guard-action` gained `--kind guard|warn`.
+- **Per-window thresholds.** New `threshold_five_hour` / `threshold_seven_day` options let
+  you set a stricter (or looser) guard threshold for a single window; unset windows fall
+  back to the global `threshold`. The status-line band color uses the per-window threshold
+  too. Wired through `breachedLimits(…, overrides)`, config, the picker, and `/config`.
+- **Burn-rate projection.** Opt-in `projection_display` (`off` | `on`, default `off`) adds a
+  compact `📈 ~1h40m to 90%` segment estimating time until the soonest watched window hits
+  its threshold, from a least-squares fit of recent readings. Backed by a new bounded history
+  ring buffer (`lib/history.mjs`) in the OS temp dir, written fire-and-forget per status-line
+  render. Localized connector (en `to` / cs `do`).
+- **Richer handoff directives.** The guard now instructs the agent to record the current
+  **git branch**, the **files changed so far**, and the **concrete next step to resume** in
+  the handoff (en + cs), and `templates/limit-guard.md` matches.
+- **Internal:** `formatStatusLine` / `formatLimit` / `formatReset` refactored to
+  options-object signatures (removes the growing positional-parameter list).
+
 ## 0.7.0 — 2026-06-06
 
 - **Compact label style.** New `label_style` option (`full` | `short`, default `full`). With
