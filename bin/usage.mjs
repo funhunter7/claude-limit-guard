@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { loadConfig as defaultLoadConfig } from '../lib/config.mjs';
 import { getUsage as defaultGetUsage, CACHE_PATH } from '../lib/usage.mjs';
 import { writeCache as defaultWriteCache } from '../lib/cache.mjs';
+import { appendReading as defaultAppendReading, readHistory as defaultReadHistory, projectMinutesToThreshold, HISTORY_PATH } from '../lib/history.mjs';
 import { coversWatched, usageFromRateLimits } from '../lib/stdinUsage.mjs';
 import { formatStatusLine, resolveHour12, resolveStyle, resolveLocale } from '../lib/format.mjs';
 import { breachedLimits, warnedLimits } from '../lib/threshold.mjs';
@@ -22,6 +23,9 @@ export async function runCli(mode, cwd, deps = {}) {
     stdinUsage = null,
     writeCache = defaultWriteCache,
     cachePath = CACHE_PATH,
+    appendReading = defaultAppendReading,
+    readHistory = defaultReadHistory,
+    historyPath = HISTORY_PATH,
   } = deps;
 
   const cfg = loadConfig(cwd);
@@ -56,13 +60,38 @@ export async function runCli(mode, cwd, deps = {}) {
   }
   const glyphs = resolveStyle(cfg.style);
   const hour12 = resolveHour12(cfg.timeFormat);
+  const nowDate = now();
+  const nowMs = nowDate.getTime();
 
   // Build per-window threshold overrides from config (only set when non-null).
   const overrides = {};
   if (cfg.thresholdFiveHour != null) overrides.five_hour = cfg.thresholdFiveHour;
   if (cfg.thresholdSevenDay != null) overrides.seven_day = cfg.thresholdSevenDay;
 
-  const line = formatStatusLine(usage, cfg.threshold, cfg.watch, { now: now(), locale, hour12, glyphs, warnBand: cfg.warnBand, labelStyle: cfg.labelStyle, resetDisplay: cfg.resetDisplay, thresholdOverrides: overrides });
+  // Burn-rate history: record one reading per status-line render (fire-and-forget, like the
+  // cache write) so the projection has a trend to fit. Only the status line writes history.
+  if (mode === '--statusline' && usage && !usage.authError) {
+    const reading = { ts: nowMs };
+    for (const key of cfg.watch) {
+      const u = usage[key]?.utilization;
+      if (typeof u === 'number') reading[key] = u;
+    }
+    appendReading(historyPath, reading); // never throws
+  }
+
+  // Optional projection (opt-in): minutes until the soonest watched window hits its
+  // effective threshold, from a least-squares fit of recent readings.
+  let projection = null;
+  if (cfg.projectionDisplay === 'on') {
+    const history = readHistory(historyPath);
+    for (const key of cfg.watch) {
+      const th = overrides[key] ?? cfg.threshold;
+      const mins = projectMinutesToThreshold(history, key, th, nowMs);
+      if (mins != null && (projection == null || mins < projection.minutes)) projection = { minutes: mins, threshold: th };
+    }
+  }
+
+  const line = formatStatusLine(usage, cfg.threshold, cfg.watch, { now: nowDate, locale, hour12, glyphs, warnBand: cfg.warnBand, labelStyle: cfg.labelStyle, resetDisplay: cfg.resetDisplay, thresholdOverrides: overrides, projectionDisplay: cfg.projectionDisplay, projection });
 
   if (mode === '--statusline') return line;
 

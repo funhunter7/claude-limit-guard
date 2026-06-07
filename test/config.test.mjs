@@ -280,6 +280,21 @@ test('loadConfig: project resetDisplay overrides env', () => {
   assert.equal(loadConfig('/proj', readFile, { CLAUDE_PLUGIN_OPTION_RESET_DISPLAY: 'relative' }).resetDisplay, 'both');
 });
 
+test('loadConfig: projectionDisplay defaults to off', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, noEnv).projectionDisplay, 'off');
+});
+
+test('loadConfig: reads CLAUDE_PLUGIN_OPTION_PROJECTION_DISPLAY', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_PROJECTION_DISPLAY: 'on' }).projectionDisplay, 'on');
+});
+
+test('loadConfig: invalid projectionDisplay falls back to off', () => {
+  const readFile = () => JSON.stringify({ projectionDisplay: 'maybe' });
+  assert.equal(loadConfig('/proj', readFile, noEnv).projectionDisplay, 'off');
+});
+
 // --- per-window thresholds ---
 
 test('loadConfig: thresholdFiveHour/thresholdSevenDay default to null', () => {

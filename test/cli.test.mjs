@@ -49,9 +49,10 @@ const BREACH = { five_hour: { utilization: 96, resets_at: '2026-05-31T06:00:00+0
                  seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
 const NOW = new Date('2026-05-31T01:00:00+02:00');
 
-function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null, warnAction = null, warnBand = 80, timeFormat = '24', style = 'emoji', shouldBlockStop = () => true, stdinUsage = null, calls = {} } = {}) {
+function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null, warnAction = null, warnBand = 80, timeFormat = '24', style = 'emoji', shouldBlockStop = () => true, stdinUsage = null, projectionDisplay = 'off', history = [], calls = {} } = {}) {
   calls.getUsage = 0;
   calls.wrote = null;
+  calls.appended = null;
   return {
     loadConfig: () => ({
       threshold: 95,
@@ -63,6 +64,7 @@ function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = nu
       warnAction,
       timeFormat,
       style,
+      projectionDisplay,
     }),
     getUsage: async () => { calls.getUsage += 1; return usage; },
     handoffExists: () => handoffExists,
@@ -71,6 +73,10 @@ function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = nu
     stdinUsage,
     writeCache: (_p, data) => { calls.wrote = data; return true; },
     cachePath: '/tmp/test-cache.json',
+    // Inject history so tests never touch the real temp-dir ring buffer.
+    appendReading: (_p, reading) => { calls.appended = reading; return true; },
+    readHistory: () => history,
+    historyPath: '/tmp/test-history.json',
   };
 }
 
@@ -258,4 +264,33 @@ test('--context: breach (>=threshold) -> breach path, no warn notice added on to
 test('--stop: only in warn band (84% < threshold 90) -> {} (unchanged)', async () => {
   const out = JSON.parse(await runCli('--stop', '/proj', deps(WARN, { warnBand: 80 })));
   assert.deepEqual(out, {});
+});
+
+// --- B3: burn-rate projection ---
+test('runCli --statusline: appends a history reading with watched utilizations', async () => {
+  const calls = {};
+  const out = await runCli('--statusline', '/proj', deps(SAMPLE, { stdinUsage: SAMPLE, calls }));
+  assert.equal(calls.appended.ts, NOW.getTime());
+  assert.equal(calls.appended.five_hour, 72);
+  assert.equal(calls.appended.seven_day, 39);
+  assert.doesNotMatch(out, /📈/); // projection off by default
+});
+
+test('runCli --statusline: projection on appends trend segment from rising history', async () => {
+  const now = NOW.getTime();
+  const history = [
+    { ts: now - 120000, five_hour: 70 },
+    { ts: now - 60000, five_hour: 71 },
+    { ts: now, five_hour: 72 },
+  ];
+  const out = await runCli('--statusline', '/proj', deps(SAMPLE, { stdinUsage: SAMPLE, projectionDisplay: 'on', history }));
+  // 72 -> 95 at ~1%/min ≈ 23 min
+  assert.match(out, /📈 ~23m to 95%$/);
+});
+
+test('runCli --statusline: projection on but flat history -> no trend segment', async () => {
+  const now = NOW.getTime();
+  const history = [{ ts: now - 60000, five_hour: 72 }, { ts: now, five_hour: 72 }];
+  const out = await runCli('--statusline', '/proj', deps(SAMPLE, { stdinUsage: SAMPLE, projectionDisplay: 'on', history }));
+  assert.doesNotMatch(out, /📈/);
 });

@@ -73,3 +73,16 @@ test('CONFIG_OPTIONS: reset_display maps to resetDisplay / reset_display', () =>
   assert.equal(CONFIG_OPTIONS.reset_display.type, 'enum');
   assert.deepEqual(CONFIG_OPTIONS.reset_display.choices, ['clock', 'relative', 'both']);
 });
+
+test('coerceOptionValue: projection_display enum accepts off/on', () => {
+  assert.equal(coerceOptionValue('projection_display', 'off'), 'off');
+  assert.equal(coerceOptionValue('projection_display', 'on'), 'on');
+  assert.throws(() => coerceOptionValue('projection_display', 'maybe'), /off, on/);
+});
+
+test('CONFIG_OPTIONS: projection_display maps to projectionDisplay / projection_display', () => {
+  assert.equal(CONFIG_OPTIONS.projection_display.projectKey, 'projectionDisplay');
+  assert.equal(CONFIG_OPTIONS.projection_display.globalKey, 'projection_display');
+  assert.equal(CONFIG_OPTIONS.projection_display.type, 'enum');
+  assert.deepEqual(CONFIG_OPTIONS.projection_display.choices, ['off', 'on']);
+});
