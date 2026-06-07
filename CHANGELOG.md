@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.8.1 — 2026-06-07
+
+- **Projection accuracy.** History writes are now throttled to one reading per minute, and the
+  projection refuses to fit a segment spanning under 2 minutes — so a fast-refreshing status
+  line can no longer extrapolate a "% per minute" slope from sub-second noise (the jumpy
+  `📈 ~3m` artifact). The fit also discards readings from before a window reset (a >15-point
+  drop) and won't show a future ETA once the latest reading is already at/above the threshold.
+- **Warn band respects per-window thresholds.** `warn_action` notices now use each window's
+  effective threshold as the upper bound, closing a gap where a window with a per-window
+  threshold above the global one got neither a warn nor a breach between the two values.
+- **Docs & diagnostics.** README documents the v0.7/v0.8 options (`warn_action`,
+  `threshold_five_hour`/`seven_day`, `label_style`, `reset_display`, `projection_display`) and
+  the `/limit-guard-status` command; `/limit-guard-status` now reports those options plus a
+  burn-rate history health line.
+
 ## 0.8.0 — 2026-06-07
 
 - **Two-stage guard — `warn_action`.** Below the blocking threshold, when a watched window
