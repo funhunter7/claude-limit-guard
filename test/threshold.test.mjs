@@ -106,12 +106,29 @@ test('breachedLimits: override on a non-watched window is ignored', () => {
 
 test('breachedLimits: per-window threshold 80; five_hour 85% is BREACHED (no warn on top)', () => {
   // Documents the warn/breach precedence: once breached via per-window threshold,
-  // warnedLimits still uses the global threshold so it does NOT add a warn notice.
+  // bin/usage.mjs skips the warn branch (breached.length > 0) so there's no double notice.
   const u = { five_hour: { utilization: 85 }, seven_day: { utilization: 30 } };
   const breached = breachedLimits(u, 90, ['five_hour', 'seven_day'], { five_hour: 80 });
   assert.deepEqual(breached, ['five_hour']); // five_hour is breached via per-window override
-  // warnedLimits uses global threshold 90: 85 < 90 -> five_hour appears in warned,
-  // but bin/usage.mjs skips the warn branch when breached.length > 0 -> no double-notice.
-  const warned = warnedLimits(u, 80, 90, ['five_hour', 'seven_day']);
-  assert.deepEqual(warned, ['five_hour']); // warnedLimits is unaware of override (by design)
+  // And warnedLimits, now override-aware, also excludes it: 85 >= its own threshold 80.
+  const warned = warnedLimits(u, 80, 90, ['five_hour', 'seven_day'], { five_hour: 80 });
+  assert.deepEqual(warned, []);
+});
+
+// --- warnedLimits per-window overrides (warn upper bound follows the per-window threshold) ---
+
+test('warnedLimits: per-window override above global raises the warn upper bound', () => {
+  // Looser window: override 98 (> global 90) keeps 93% inside the warn band [80, 98).
+  const u = { seven_day: { utilization: 93 } };
+  assert.deepEqual(warnedLimits(u, 80, 90, ['seven_day'], { seven_day: 98 }), ['seven_day']);
+});
+
+test('warnedLimits: util at/above its per-window override -> not warned (breached instead)', () => {
+  const u = { five_hour: { utilization: 85 } };
+  assert.deepEqual(warnedLimits(u, 80, 90, ['five_hour'], { five_hour: 80 }), []);
+});
+
+test('warnedLimits: override defaults to global threshold when absent', () => {
+  const u = { five_hour: { utilization: 85 } };
+  assert.deepEqual(warnedLimits(u, 80, 90, ['five_hour'], {}), ['five_hour']);
 });

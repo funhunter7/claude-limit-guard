@@ -103,6 +103,17 @@ test('projectMinutesToThreshold: ignores readings before a window reset (large d
   assert.ok(m != null && Math.abs(m - 83) <= 2, `expected ~83, got ${m}`);
 });
 
+test('projectMinutesToThreshold: latest reading already at/above threshold -> null (no contradictory ETA)', () => {
+  // A dip then a spike: the least-squares intercept lands below 90, but the most recent
+  // actual reading is 91 — already over. Must not advertise a future ETA.
+  const h = [
+    { ts: BASE, five_hour: 85 },
+    { ts: BASE + 60000, five_hour: 80 },
+    { ts: BASE + 120000, five_hour: 91 },
+  ];
+  assert.equal(projectMinutesToThreshold(h, 'five_hour', 90, BASE + 120000), null);
+});
+
 test('projectMinutesToThreshold: too-short time span -> null (avoids noisy extrapolation)', () => {
   // Two readings only 30s apart, rising fast: span < 2 min -> refuse to project.
   const h = [{ ts: BASE, five_hour: 80 }, { ts: BASE + 30000, five_hour: 82 }];
