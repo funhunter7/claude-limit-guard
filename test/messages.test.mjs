@@ -107,3 +107,22 @@ test('getMessages: cs handoff directives name branch, files and next step', () =
     assert.match(directive, new RegExp(nfc('další krok'), 'i'));
   }
 });
+
+test('every interpolated string preserves all its placeholders in every locale', async () => {
+  const ALL = ['en', 'cs', 'de', 'es', 'fr', 'it', 'pl', 'sk', 'uk', 'ru', 'ja', 'zh', 'ko', 'pt', 'nl', 'tr'];
+  // Keys whose en value is a function receive interpolated args; each arg must survive translation.
+  const fnKeys = Object.keys(en).filter((k) => typeof en[k] === 'function');
+  for (const lang of ALL) {
+    const mod = (await import(`../lib/messages/${lang}.mjs`)).default;
+    for (const key of fnKeys) {
+      const fn = mod[key];
+      assert.equal(typeof fn, 'function', `${lang}.${key} should be a function`);
+      const arity = en[key].length; // param count of the canonical en builder
+      const markers = Array.from({ length: arity }, (_, i) => `⟦MARK${i}⟧`);
+      const out = String(fn(...markers));
+      for (const m of markers) {
+        assert.ok(out.includes(m), `${lang}.${key} dropped placeholder ${m}`);
+      }
+    }
+  }
+});
