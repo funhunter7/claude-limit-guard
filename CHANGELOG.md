@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.10.1 — 2026-06-08
+
+- **Translation review pass.** All 14 best-effort locales were reviewed for terminology
+  consistency and naturalness (en + cs unchanged). Concrete fixes: `de` unifies "status line
+  wired" on *eingerichtet*, `pl` corrects the grammatical gender of *cache* (*świeży*), and
+  `tr` unifies the suffix apostrophe on the straight ASCII form. The other 11 locales were
+  verified already-consistent. Back-translations are recorded under `docs/superpowers/specs/`.
+- **Placeholder-integrity test.** A new test exercises every interpolated message builder in
+  all 16 locales with sentinel arguments, failing if any translation drops a placeholder
+  (handoff path, branch, window, threshold, …) — a guard against future translation edits.
+
 ## 0.10.0 — 2026-06-07
 
 - **Reset notification.** With `notifications` on, a one-shot OS toast now also fires when a watched
