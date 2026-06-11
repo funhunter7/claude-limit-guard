@@ -198,6 +198,13 @@ test('resolveLocale: explicit locale passes through (detector not used)', () => 
   assert.equal(resolveLocale('de-DE', () => 'cs-CZ'), 'de-DE');
 });
 
+test('resolveLocale: structurally invalid tag falls back to the OS detector', () => {
+  // A hand-edited config can carry a tag Intl rejects with a RangeError; passing it
+  // through would crash every Intl formatter and blank the status line to "limit ?".
+  assert.equal(resolveLocale('xx yy', () => 'en-GB'), 'en-GB');
+  assert.equal(resolveLocale('abc-', () => 'en-GB'), 'en-GB');
+});
+
 import { GLYPHS, resolveStyle } from '../lib/format.mjs';
 
 test('resolveStyle: explicit emoji/ascii', () => {
