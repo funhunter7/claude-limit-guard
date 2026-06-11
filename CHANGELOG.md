@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.10.2 — 2026-06-11
+
+- **Config hardening (audit follow-up).** A hand-edited `.claude/limit-guard.json` can no longer
+  silently disable the guard: an out-of-range or non-numeric `threshold`/`warnBand` (e.g. `200`,
+  `"high"`) now falls back to the default instead of being applied verbatim. Values set via
+  `/limit-guard-config` were always validated; this closes the raw-file-edit gap.
+- **Invalid locale no longer blanks the status line.** A structurally invalid `locale` tag
+  (rejected by `Intl` with a `RangeError`) now falls back to the OS locale instead of crashing
+  every formatter and rendering `limit ?`.
+
 ## 0.10.1 — 2026-06-08
 
 - **Translation review pass.** All 14 best-effort locales were reviewed for terminology
