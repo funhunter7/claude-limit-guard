@@ -129,6 +129,23 @@ test('loadConfig: project warnBand overrides env', () => {
   assert.equal(loadConfig('/proj', readFile, { CLAUDE_PLUGIN_OPTION_WARN_BAND: '70' }).warnBand, 60);
 });
 
+test('loadConfig: out-of-range threshold from a hand-edited file -> default', () => {
+  const over = () => JSON.stringify({ threshold: 200 });
+  assert.equal(loadConfig('/proj', over, noEnv).threshold, DEFAULT_CONFIG.threshold);
+  const under = () => JSON.stringify({ threshold: -5 });
+  assert.equal(loadConfig('/proj', under, noEnv).threshold, DEFAULT_CONFIG.threshold);
+});
+
+test('loadConfig: non-numeric threshold from a hand-edited file -> default', () => {
+  const readFile = () => JSON.stringify({ threshold: 'high' });
+  assert.equal(loadConfig('/proj', readFile, noEnv).threshold, DEFAULT_CONFIG.threshold);
+});
+
+test('loadConfig: out-of-range warnBand from a hand-edited file -> default', () => {
+  const readFile = () => JSON.stringify({ warnBand: 101 });
+  assert.equal(loadConfig('/proj', readFile, noEnv).warnBand, DEFAULT_CONFIG.warnBand);
+});
+
 test('loadConfig: reads CLAUDE_PLUGIN_OPTION_WATCH csv -> trimmed array', () => {
   const readThrows = () => { throw new Error('ENOENT'); };
   const cfg = loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_WATCH: ' five_hour , seven_day ' });
