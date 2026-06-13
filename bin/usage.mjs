@@ -171,7 +171,11 @@ export async function runCli(mode, cwd, deps = {}) {
 
   if (mode === '--stop') {
     if (snoozed) return '{}';
-    if (breached.length && !hoExists()) {
+    // Loop prevention is the per-window shouldBlockStop marker alone — NOT the mere
+    // existence of a handoff file. A long-lived/committed handoff (e.g. a dev RESUME.md)
+    // must not permanently disable the guard; once the reset window rolls over we block
+    // again and the guard action re-saves the handoff with the latest state.
+    if (breached.length) {
       // Scope the one-shot marker to this project so blocking in one project does not
       // suppress the guard in another that breaches in the same reset window.
       const windowKey = `${cwd}|${usage[breached[0]]?.resets_at || ''}`;
