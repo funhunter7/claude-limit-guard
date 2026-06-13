@@ -44,6 +44,26 @@ test('getUsage: network failure, no stale -> null', async () => {
   assert.equal(await getUsage('/c', d), null);
 });
 
+test('getUsage: cached data past its reset (with watch+nowMs) is ignored -> fetches fresh', async () => {
+  const now = 1_000_000;
+  const d = deps({
+    cache: { five_hour: { utilization: 60, resets_at: now - 1 } }, // stale: window already reset
+    fetchResult: { ok: true, data: { five_hour: { utilization: 4, resets_at: now + 60000 } } },
+  });
+  const r = await getUsage('/c', { ...d, nowMs: now, watch: ['five_hour'] });
+  assert.deepEqual(r, { five_hour: { utilization: 4, resets_at: now + 60000 } });
+  assert.deepEqual(d.calls.wrote, { five_hour: { utilization: 4, resets_at: now + 60000 } });
+});
+
+test('getUsage: cached data still in its window (with watch+nowMs) is served, no fetch', async () => {
+  const now = 1_000_000;
+  const d = deps({ cache: { five_hour: { utilization: 60, resets_at: now + 60000 } } });
+  d.fetchUsage = async () => { throw new Error('should not fetch'); };
+  const r = await getUsage('/c', { ...d, nowMs: now, watch: ['five_hour'] });
+  assert.deepEqual(r, { five_hour: { utilization: 60, resets_at: now + 60000 } });
+  assert.equal(d.calls.wrote, null);
+});
+
 test('getUsage: injected debug receives the fetch outcome', async () => {
   const logged = [];
   const d = deps({ cache: null, fetchResult: { ok: false, reason: 'expired' }, stale: null });

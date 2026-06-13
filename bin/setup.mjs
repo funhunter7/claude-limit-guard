@@ -9,14 +9,22 @@ import { resolveLocale } from '../lib/format.mjs';
 import { getMessages } from '../lib/messages.mjs';
 import { globalSettingsPath } from '../lib/pluginSettings.mjs';
 
-// Pure: returns the settings object with statusLine pointing at our command, plus a
-// `changed` flag. Other keys are preserved; an identical existing command is a no-op.
-export function computeSettings(existing, command) {
+// Re-run the status line on a fixed timer (seconds) on top of Claude Code's event-driven
+// updates. This keeps the value current while the session is idle — notably so it refreshes
+// itself shortly after a limit reset, which event-only updates would miss. The matching
+// staleness check in bin/usage.mjs makes these idle re-runs cheap (no network until a reset
+// actually passes). See docs/superpowers/specs/2026-06-13-stale-after-reset-design.md.
+export const REFRESH_INTERVAL_SECONDS = 60;
+
+// Pure: returns the settings object with statusLine pointing at our command (with the
+// refresh interval), plus a `changed` flag. Other keys are preserved; a matching existing
+// command AND interval is a no-op — a wiring that lacks/differs in refreshInterval is upgraded.
+export function computeSettings(existing, command, refreshInterval = REFRESH_INTERVAL_SECONDS) {
   const cur = existing?.statusLine;
-  if (cur && cur.type === 'command' && cur.command === command) {
+  if (cur && cur.type === 'command' && cur.command === command && cur.refreshInterval === refreshInterval) {
     return { settings: existing, changed: false };
   }
-  return { settings: { ...existing, statusLine: { type: 'command', command } }, changed: true };
+  return { settings: { ...existing, statusLine: { type: 'command', command, refreshInterval } }, changed: true };
 }
 
 function main(pluginRoot = process.argv[2] || process.cwd()) {

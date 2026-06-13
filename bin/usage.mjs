@@ -6,7 +6,7 @@ import { getUsage as defaultGetUsage, CACHE_PATH } from '../lib/usage.mjs';
 import { writeCache as defaultWriteCache } from '../lib/cache.mjs';
 import { appendReading as defaultAppendReading, readHistory as defaultReadHistory, projectMinutesToThreshold, HISTORY_PATH, HISTORY_MIN_INTERVAL_MS } from '../lib/history.mjs';
 import { appendUsage as defaultAppendUsage, USAGE_LOG_PATH } from '../lib/usageLog.mjs';
-import { coversWatched, usageFromRateLimits } from '../lib/stdinUsage.mjs';
+import { coversWatched, usageFromRateLimits, watchedExpired } from '../lib/stdinUsage.mjs';
 import { formatStatusLine, resolveHour12, resolveStyle, resolveLocale } from '../lib/format.mjs';
 import { breachedLimits, warnedLimits } from '../lib/threshold.mjs';
 import { getMessages } from '../lib/messages.mjs';
@@ -56,21 +56,27 @@ export async function runCli(mode, cwd, deps = {}) {
     });
   }
 
+  const nowDate = now();
+  const nowMs = nowDate.getTime();
+
   // Hot path: the --statusline invocation receives native rate_limits on stdin. When the
-  // mapped data covers every watched window, use it directly (no network) and write it
-  // through to the shared cache so the hooks (--stop/--context) read warm data too.
-  // Any gap (absent/garbage window, API-key user, pre-first-response) falls back to getUsage().
+  // mapped data covers every watched window AND has not passed its reset, use it directly
+  // (no network) and write it through to the shared cache so the hooks (--stop/--context)
+  // read warm data too. Once a watched window's reset time passes, the stdin/cache value is
+  // stale (Claude Code only refreshes rate_limits after an API response), so we fall back to
+  // getUsage() — the OAuth poll — to fetch the fresh post-reset value. Any other gap
+  // (absent/garbage window, API-key user, pre-first-response) also falls back to getUsage().
   let usage;
-  if (mode === '--statusline' && coversWatched(stdinUsage, cfg.watch)) {
+  if (mode === '--statusline'
+      && coversWatched(stdinUsage, cfg.watch)
+      && !watchedExpired(stdinUsage, cfg.watch, nowMs)) {
     usage = stdinUsage;
     writeCache(cachePath, stdinUsage); // fire-and-forget; the real writeCache never throws
   } else {
-    usage = await getUsage();
+    usage = await getUsage(cachePath, { nowMs, watch: cfg.watch });
   }
   const glyphs = resolveStyle(cfg.style);
   const hour12 = resolveHour12(cfg.timeFormat);
-  const nowDate = now();
-  const nowMs = nowDate.getTime();
   // When snoozed (/limit-guard-snooze), suppress the guard/context directives until the
   // snooze expires. The status line and notifications are unaffected.
   const snoozed = snoozeUntil(nowMs) != null;
