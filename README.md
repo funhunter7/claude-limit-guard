@@ -89,12 +89,19 @@ The status line is a user setting, so add it to `~/.claude/settings.json` yourse
   "statusLine": {
     "type": "command",
     "command": "node \"%LOCALAPPDATA%\\path\\to\\claude-limit-guard\\bin\\usage.mjs\" --statusline",
-    "refreshInterval": 30
+    "refreshInterval": 60
   }
 }
 ```
 
 Use the absolute path to `bin/usage.mjs`. On macOS/Linux use a normal POSIX path.
+
+`refreshInterval` re-runs the status line on a timer (in addition to Claude Code's
+event-driven updates) so the value stays current while the session is idle — in particular it
+refreshes itself shortly after a limit reset, which event-only updates would otherwise miss
+until your next message. `/limit-guard-setup` sets `refreshInterval: 60` for you; raise it to
+reduce idle re-runs, or remove it to update only on activity. (The idle re-runs are cheap: the
+plugin makes no network call until a window's reset time has actually passed.)
 
 ## Commands
 
@@ -105,7 +112,7 @@ Use the absolute path to `bin/usage.mjs`. On macOS/Linux use a normal POSIX path
 | **`/limit-guard-status`** | Print the resolved config plus a health snapshot — token, status-line cache age, whether the status line is wired, and burn-rate history readings. |
 | **`/limit-guard-stats`** | Summarize recent usage from the rolling ~7-day log: number of readings, peak 5h/7d utilization, and reset count. |
 | **`/limit-guard-doctor`** | Run a self-check — Node version, OAuth token, whether the status line is wired, cache freshness, and installed-vs-latest plugin version — with a fix hint for anything failing. |
-| **`/limit-guard-setup`** | Auto-wire the status line into `~/.claude/settings.json` (backing up the previous file first). Idempotent — a no-op when it's already wired. |
+| **`/limit-guard-setup`** | Auto-wire the status line into `~/.claude/settings.json` (backing up the previous file first), including `refreshInterval: 60` so it stays current while idle. Idempotent — a no-op when it's already wired; re-run it to add `refreshInterval` to an older wiring. |
 | **`/limit-guard-snooze`** | Temporarily pause the guard's stop/handoff directives until the next reset (`/limit-guard-snooze clear` cancels early). The status line and notifications keep working. |
 
 Both write through a validated helper that preserves your other settings.
@@ -210,6 +217,11 @@ call. It falls back to `GET https://api.anthropic.com/api/oauth/usage` (your loc
 — the same source as `/usage`) when that data is unavailable (API-key sessions, before the
 first response, older Claude Code). Hooks always call `getUsage()`, which reads the same ~45s
 cache the status line keeps warm — so they hit the OAuth endpoint only when that cache is cold.
+
+Once a watched window's reset time passes, the native `rate_limits` (and the warm cache
+populated from them) are stale until Claude Code makes its next API response, so the status
+line stops trusting them and re-queries the OAuth endpoint for the fresh post-reset value —
+guaranteeing the displayed number is correct the moment the script next runs after a reset.
 
 ## Troubleshooting
 

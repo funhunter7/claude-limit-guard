@@ -4,17 +4,25 @@ import { computeSettings } from '../bin/setup.mjs';
 
 const CMD = 'node "/root/bin/usage.mjs" --statusline';
 
-test('computeSettings: adds statusLine when absent', () => {
+test('computeSettings: adds statusLine with refreshInterval when absent', () => {
   const { settings, changed } = computeSettings({}, CMD);
   assert.equal(changed, true);
-  assert.deepEqual(settings.statusLine, { type: 'command', command: CMD });
+  assert.deepEqual(settings.statusLine, { type: 'command', command: CMD, refreshInterval: 60 });
 });
 
-test('computeSettings: no-op when identical', () => {
-  const existing = { statusLine: { type: 'command', command: CMD }, other: 1 };
+test('computeSettings: no-op when command and refreshInterval already match', () => {
+  const existing = { statusLine: { type: 'command', command: CMD, refreshInterval: 60 }, other: 1 };
   const { changed, settings } = computeSettings(existing, CMD);
   assert.equal(changed, false);
   assert.equal(settings.other, 1);
+});
+
+test('computeSettings: upgrades an existing wiring that lacks refreshInterval', () => {
+  const existing = { statusLine: { type: 'command', command: CMD }, keep: 3 };
+  const { changed, settings } = computeSettings(existing, CMD);
+  assert.equal(changed, true);
+  assert.equal(settings.statusLine.refreshInterval, 60);
+  assert.equal(settings.keep, 3);
 });
 
 test('computeSettings: overwrites a different command, preserves other keys', () => {
