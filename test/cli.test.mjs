@@ -141,9 +141,9 @@ test('--stop: custom guardAction appears in block reason', async () => {
   assert.match(out.reason, /Zavolej manželce a vypni server\./);
 });
 
-test('--stop: breach + handoff already exists -> allow stop (no loop)', async () => {
+test('--stop: breach + stale handoff present -> still blocks (a pre-existing handoff must not disable the guard; the per-window marker prevents loops)', async () => {
   const out = JSON.parse(await runCli('--stop', '/proj', deps(BREACH, { handoffExists: true })));
-  assert.deepEqual(out, {});
+  assert.equal(out.decision, 'block');
 });
 
 test('--stop: under threshold -> allow stop', async () => {

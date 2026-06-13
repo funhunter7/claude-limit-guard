@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.11.1 — 2026-06-13
+
+- **Fix: a pre-existing handoff file no longer disables the Stop guard.** The `--stop` hook gated
+  on `breached.length && !handoffExists()`, so if a handoff file (`.claude/RESUME.md` by default)
+  was already present, the guard would silently never block — even far over threshold. A
+  long-lived or committed handoff (e.g. a development `RESUME.md`) therefore permanently disabled
+  the hard stop in that project, while the status line, doctor and context injection all kept
+  working (so nothing flagged it). Loop prevention is now the per-window `shouldBlockStop` marker
+  alone, which already blocks exactly once per reset window; once the window rolls over the guard
+  blocks again and the guard action re-saves the handoff with the latest state. No config or
+  status-line change — re-run `/plugin update` to pick up the fix.
+
 ## 0.11.0 — 2026-06-13
 
 - **Status line refreshes after a limit reset.** If a session sat idle across a window's reset,
