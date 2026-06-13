@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.11.0 — 2026-06-13
+
+- **Status line refreshes after a limit reset.** If a session sat idle across a window's reset,
+  the status line could keep showing the pre-reset value: the native `rate_limits` Claude Code
+  provides on stdin only update after an API response, and the hot path trusted them
+  unconditionally. Now, once a watched window's `resets_at` has passed, the plugin treats that
+  data (and the cache populated from it) as stale and re-queries the OAuth usage endpoint for the
+  fresh post-reset value — so the displayed number is correct the moment the status line next runs
+  after a reset. The reset time is read dynamically from the data, never hard-coded. New pure
+  helper `watchedExpired` in `lib/stdinUsage.mjs`.
+- **`/limit-guard-setup` sets `refreshInterval: 60`.** The wired status line now re-runs on a
+  60-second timer in addition to Claude Code's event-driven updates, so the value self-updates
+  shortly after a reset even while the session is idle (the idle re-runs make no network call
+  until a reset actually passes). Re-run `/limit-guard-setup` to add `refreshInterval` to an
+  existing wiring; manual installs can add it themselves (see the README).
+
 ## 0.10.2 — 2026-06-11
 
 - **Config hardening (audit follow-up).** A hand-edited `.claude/limit-guard.json` can no longer
