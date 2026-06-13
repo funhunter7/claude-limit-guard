@@ -218,6 +218,17 @@ test('--statusline: partial stdinUsage -> falls back to getUsage, no cache write
   assert.equal(calls.wrote, null);
 });
 
+test('--statusline: stdin covers windows but one reset has passed -> re-queries getUsage, no cache write', async () => {
+  const calls = {};
+  // NOW = 2026-05-31T01:00; five_hour reset at 00:00 is already in the past => stale.
+  const expired = { five_hour: { utilization: 60, resets_at: Date.parse('2026-05-31T00:00:00+02:00') },
+                    seven_day: { utilization: 39, resets_at: Date.parse('2026-06-03T10:00:00+02:00') } };
+  const out = await runCli('--statusline', '/proj', deps(SAMPLE, { stdinUsage: expired, calls }));
+  assert.equal(out, '🟢 Limit session: 72% → 06:00 · 🟢 Week Limit: 39% → Wednesday 6/3/2026 10:00');
+  assert.equal(calls.getUsage, 1);
+  assert.equal(calls.wrote, null);
+});
+
 test('--statusline: no stdinUsage -> getUsage path (today behavior)', async () => {
   const calls = {};
   await runCli('--statusline', '/proj', deps(SAMPLE, { stdinUsage: null, calls }));
