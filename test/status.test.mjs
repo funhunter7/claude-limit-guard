@@ -18,6 +18,14 @@ test('renderStatus: shows resolved config and health', () => {
 
 // --- token present / missing ---
 
+test('renderStatus: watch=auto is shown literally as "auto"', () => {
+  const out = renderStatus(
+    { threshold: 90, watch: 'auto', locale: 'en-US' },
+    { tokenPresent: true, cacheAgeMs: null, statusLineWired: false },
+  );
+  assert.match(out, /watch:\s*auto/);
+});
+
 test('renderStatus (en): token present -> ok wording', () => {
   const out = renderStatus(
     { threshold: 90, watch: ['five_hour'], locale: 'en-US' },
