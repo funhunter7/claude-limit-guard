@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/funhunter7/claude-limit-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/funhunter7/claude-limit-guard/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-0.10.0-brightgreen)
+![Version](https://img.shields.io/badge/version-0.12.0-brightgreen)
 ![Node](https://img.shields.io/badge/node-%E2%89%A518-339933?logo=node.js&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Windows%20·%20macOS%20·%20Linux-lightgrey)
 
@@ -141,7 +141,7 @@ Settings you can change **directly in Claude Code** via `/config` (under this pl
 | `warn_band` | number | `80` | At or above this percentage (but below `threshold`) the status line turns amber. |
 | `threshold_five_hour` | number | _(unset)_ | Per-window guard threshold for the `five_hour` window; overrides `threshold` for it. Blank = use the global `threshold`. |
 | `threshold_seven_day` | number | _(unset)_ | Per-window guard threshold for the `seven_day` window; overrides `threshold` for it. Blank = use the global `threshold`. |
-| `watch` | string (CSV) | `five_hour,seven_day` | Which limit windows to show/guard, comma-separated. Also accepts the (best-effort, when present) per-model windows `seven_day_opus` / `seven_day_sonnet`. |
+| `watch` | string | `auto` | Which limit windows to show/guard. `auto` (default) is **model-aware**: it watches the 5-hour and overall weekly windows plus any per-model weekly window in use this week (`seven_day_opus`/`seven_day_sonnet`) — so Opus-main-with-Sonnet-subagents guards both. Or give a comma-separated list to pin specific windows (`five_hour`, `seven_day`, `seven_day_opus`, `seven_day_sonnet`). |
 | `guard_action` | string | `""` | What Claude should do when the threshold is reached. Leave empty for the built-in save-and-handoff routine. |
 | `warn_action` | string | `""` | Gentle, **non-blocking** advice appended to context while usage is in the warn band (below `threshold`). Leave empty for the built-in message. |
 | `label_style` | enum | `full` | Window labels: `full` (`Limit session:` / `Week Limit:`) or `short` (`5h` / `7d`) to save line width. |
