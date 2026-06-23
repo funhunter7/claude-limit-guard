@@ -28,8 +28,11 @@ Steps:
 3. Ask for the value of the chosen setting:
    - `time_format` → AskUserQuestion with options **system** (sleduj OS), **12**, **24**.
    - `style` → AskUserQuestion with options **auto** (detekuj terminál), **emoji**, **ascii**.
-   - `watch` → AskUserQuestion with **multiSelect: true** offering **five_hour** and
-     **seven_day**; join the chosen keys with a comma (e.g. `five_hour,seven_day`).
+   - `watch` → first offer **auto** (model-aware default: 5h + weekly + any per-model weekly
+     window in use). If the user instead wants to pin windows, AskUserQuestion with
+     **multiSelect: true** offering **five_hour**, **seven_day**, **seven_day_opus**,
+     **seven_day_sonnet**; join the chosen keys with a comma (e.g. `five_hour,seven_day`).
+     Pass the literal value `auto` to use the model-aware mode.
    - `threshold` / `warn_band` → a plain prompt for a whole number 0–100.
 
 4. Run, substituting `<scope>` (global|project), `<option>` (the option name from step 1),
