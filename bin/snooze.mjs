@@ -8,6 +8,7 @@ import { readCache } from '../lib/cache.mjs';
 import { resolveLocale } from '../lib/format.mjs';
 import { getMessages } from '../lib/messages.mjs';
 import { setSnooze, clearSnooze } from '../lib/snoozeGuard.mjs';
+import { resolveWatch } from '../lib/watch.mjs';
 
 // Soonest future reset (ms epoch) among the watched windows in the warm cache, or null.
 // Accepts resets_at as an ISO string or an ms timestamp (both parse via Date).
@@ -43,7 +44,7 @@ function main(argv = process.argv.slice(2)) {
 
   const now = Date.now();
   const usage = readCache(CACHE_PATH, Infinity);
-  const until = soonestReset(usage, cfg.watch, now) ?? (now + 5 * 3600 * 1000);
+  const until = soonestReset(usage, resolveWatch(usage, cfg.watch), now) ?? (now + 5 * 3600 * 1000);
   setSnooze(until);
   process.stdout.write(m.snoozeSet(new Date(until).toLocaleString(locale)) + '\n');
 }
