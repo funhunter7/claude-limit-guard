@@ -1,6 +1,6 @@
 {
   "name": "claude-limit-guard",
-  "version": "0.11.1",
+  "version": "0.12.0",
   "description": "Watches Claude subscription usage limits; shows them in the status line, injects them into context, and gracefully saves/resumes work at a configurable threshold.",
   "author": { "name": "funhunter7" },
   "userConfig": {
@@ -29,8 +29,8 @@
     "watch": {
       "type": "string",
       "title": "Watched limit windows",
-      "description": "Comma-separated limit windows to show/guard, e.g. five_hour,seven_day (default five_hour,seven_day).",
-      "default": "five_hour,seven_day"
+      "description": "Limit windows to show/guard: 'auto' (model-aware: 5h + weekly + any per-model weekly window in use) or a comma-separated list like five_hour,seven_day,seven_day_opus (default auto).",
+      "default": "auto"
     },
     "guard_action": {
       "type": "string",

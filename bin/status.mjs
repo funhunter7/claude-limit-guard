@@ -25,7 +25,7 @@ export function renderStatus(cfg, health) {
     `  threshold: ${cfg.threshold}%`,
     `  thresholdFiveHour: ${pct(cfg.thresholdFiveHour)}`,
     `  thresholdSevenDay: ${pct(cfg.thresholdSevenDay)}`,
-    `  watch: ${(cfg.watch ?? []).join(', ')}`,
+    `  watch: ${Array.isArray(cfg.watch) ? cfg.watch.join(', ') : cfg.watch}`,
     `  warnBand: ${pct(cfg.warnBand)}`,
     `  labelStyle: ${cfg.labelStyle ?? '-'}`,
     `  resetDisplay: ${cfg.resetDisplay ?? '-'}`,
