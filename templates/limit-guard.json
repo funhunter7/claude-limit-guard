@@ -1,5 +1,5 @@
 {
   "threshold": 95,
-  "watch": ["five_hour", "seven_day"],
+  "watch": "auto",
   "handoff": ".claude/RESUME.md"
 }
