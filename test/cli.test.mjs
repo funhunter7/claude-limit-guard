@@ -49,16 +49,16 @@ const BREACH = { five_hour: { utilization: 96, resets_at: '2026-05-31T06:00:00+0
                  seven_day: { utilization: 39, resets_at: '2026-06-03T10:00:00+02:00' } };
 const NOW = new Date('2026-05-31T01:00:00+02:00');
 
-function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null, warnAction = null, warnBand = 80, timeFormat = '24', style = 'emoji', shouldBlockStop = () => true, stdinUsage = null, projectionDisplay = 'off', history = [], notifications = 'off', shouldNotify = () => true, snoozeUntil = () => null, calls = {} } = {}) {
+function deps(usage, { handoffExists = false, locale = 'en-US', guardAction = null, warnAction = null, warnBand = 80, timeFormat = '24', style = 'emoji', shouldBlockStop = () => true, stdinUsage = null, projectionDisplay = 'off', history = [], notifications = 'off', shouldNotify = () => true, snoozeUntil = () => null, watch = ['five_hour', 'seven_day'], threshold = 95, calls = {} } = {}) {
   calls.getUsage = 0;
   calls.wrote = null;
   calls.appended = null;
   calls.notified = [];
   return {
     loadConfig: () => ({
-      threshold: 95,
+      threshold,
       warnBand,
-      watch: ['five_hour', 'seven_day'],
+      watch,
       handoff: '.claude/RESUME.md',
       locale,
       guardAction,
@@ -390,4 +390,32 @@ test('--context: snoozed -> no breach directive', async () => {
 test('--context: not snoozed -> breach directive still present', async () => {
   const out = JSON.parse(await runCli('--context', '/proj', deps(BREACH)));
   assert.match(out.hookSpecificOutput.additionalContext, /THRESHOLD EXCEEDED/);
+});
+
+// --- auto watch mode (model-aware, usage-driven) ---
+
+const OPUS_USED = { five_hour: { utilization: 10, resets_at: '2026-05-31T06:00:00+02:00' },
+                    seven_day: { utilization: 20, resets_at: '2026-06-03T10:00:00+02:00' },
+                    seven_day_opus: { utilization: 60, resets_at: '2026-06-03T10:00:00+02:00' } };
+
+test('--statusline: auto shows the opus window when it is in use', async () => {
+  const out = await runCli('--statusline', '/proj', deps(OPUS_USED, { watch: 'auto' }));
+  assert.match(out, /Opus/); // the seven_day_opus label is rendered under auto
+});
+
+test('--stop: auto breaches on a per-model window over threshold', async () => {
+  const opusBreach = { five_hour: { utilization: 10, resets_at: '2026-05-31T06:00:00+02:00' },
+                       seven_day: { utilization: 20, resets_at: '2026-06-03T10:00:00+02:00' },
+                       seven_day_opus: { utilization: 96, resets_at: '2026-06-03T10:00:00+02:00' } };
+  const out = JSON.parse(await runCli('--stop', '/proj', deps(opusBreach, { watch: 'auto', threshold: 90, handoffExists: false })));
+  assert.equal(out.decision, 'block');
+  assert.match(out.reason, /seven_day_opus/);
+});
+
+test('--stop: auto does NOT breach on an unused per-model window (utilization 0)', async () => {
+  const unused = { five_hour: { utilization: 10, resets_at: '2026-05-31T06:00:00+02:00' },
+                   seven_day: { utilization: 20, resets_at: '2026-06-03T10:00:00+02:00' },
+                   seven_day_opus: { utilization: 0, resets_at: '2026-06-03T10:00:00+02:00' } };
+  const out = JSON.parse(await runCli('--stop', '/proj', deps(unused, { watch: 'auto', threshold: 90, handoffExists: false })));
+  assert.deepEqual(out, {});
 });

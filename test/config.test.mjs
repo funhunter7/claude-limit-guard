@@ -385,3 +385,25 @@ test('loadConfig: global pluginConfigs threshold_five_hour is parsed', () => {
   assert.equal(cfg.thresholdFiveHour, 85);
   assert.equal(cfg.thresholdSevenDay, 70);
 });
+
+// --- watch: auto sentinel (model-aware default) ---
+
+test('loadConfig: default watch is "auto"', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, {}).watch, 'auto');
+});
+
+test('loadConfig: CLAUDE_PLUGIN_OPTION_WATCH=auto -> "auto"', () => {
+  const readThrows = () => { throw new Error('ENOENT'); };
+  assert.equal(loadConfig('/proj', readThrows, { CLAUDE_PLUGIN_OPTION_WATCH: 'auto' }).watch, 'auto');
+});
+
+test('loadConfig: invalid watch entries fall back to default "auto"', () => {
+  const readFile = () => JSON.stringify({ watch: ['bogus', 42] });
+  assert.equal(loadConfig('/proj', readFile, {}).watch, 'auto');
+});
+
+test('loadConfig: project watch csv string is coerced to a valid array', () => {
+  const readFile = () => JSON.stringify({ watch: 'five_hour, seven_day_opus' });
+  assert.deepEqual(loadConfig('/proj', readFile, {}).watch, ['five_hour', 'seven_day_opus']);
+});

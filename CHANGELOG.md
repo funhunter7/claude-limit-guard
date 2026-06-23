@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.12.0 — 2026-06-23
+
+- **Added: model-aware `auto` watch (new default).** The `watch` setting now defaults to `auto`:
+  it always watches the 5-hour and overall weekly windows and additionally watches any per-model
+  weekly window in use this week (`seven_day_opus` / `seven_day_sonnet`, included once their
+  utilization is above zero). This fixes the status line and guard under-reporting versus Claude
+  Code's own usage warning when running Opus — and correctly covers Opus-main-with-Sonnet-subagents
+  (both per-model windows are then watched). It is resolved purely from the usage data, so it
+  behaves identically in the status line and in the hooks with no active-model detection (hooks do
+  not receive the model). Pin specific windows by giving an explicit comma-separated list as before;
+  existing explicit `watch` lists are unaffected.
+
 ## 0.11.1 — 2026-06-13
 
 - **Fix: a pre-existing handoff file no longer disables the Stop guard.** The `--stop` hook gated

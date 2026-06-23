@@ -7,6 +7,7 @@ import { writeCache as defaultWriteCache } from '../lib/cache.mjs';
 import { appendReading as defaultAppendReading, readHistory as defaultReadHistory, projectMinutesToThreshold, HISTORY_PATH, HISTORY_MIN_INTERVAL_MS } from '../lib/history.mjs';
 import { appendUsage as defaultAppendUsage, USAGE_LOG_PATH } from '../lib/usageLog.mjs';
 import { coversWatched, usageFromRateLimits, watchedExpired } from '../lib/stdinUsage.mjs';
+import { resolveWatch, watchBase } from '../lib/watch.mjs';
 import { formatStatusLine, resolveHour12, resolveStyle, resolveLocale } from '../lib/format.mjs';
 import { breachedLimits, warnedLimits } from '../lib/threshold.mjs';
 import { getMessages } from '../lib/messages.mjs';
@@ -67,14 +68,20 @@ export async function runCli(mode, cwd, deps = {}) {
   // getUsage() — the OAuth poll — to fetch the fresh post-reset value. Any other gap
   // (absent/garbage window, API-key user, pre-first-response) also falls back to getUsage().
   let usage;
+  // Pre-usage decisions (hot-path coverage + cache staleness) use the fixed base set:
+  // under 'auto' the per-model windows are opportunistic add-ons, not a precondition.
+  const base = watchBase(cfg.watch);
   if (mode === '--statusline'
-      && coversWatched(stdinUsage, cfg.watch)
-      && !watchedExpired(stdinUsage, cfg.watch, nowMs)) {
+      && coversWatched(stdinUsage, base)
+      && !watchedExpired(stdinUsage, base, nowMs)) {
     usage = stdinUsage;
     writeCache(cachePath, stdinUsage); // fire-and-forget; the real writeCache never throws
   } else {
-    usage = await getUsage(cachePath, { nowMs, watch: cfg.watch });
+    usage = await getUsage(cachePath, { nowMs, watch: base });
   }
+  // With live usage known, resolve the effective windows ('auto' adds any per-model weekly
+  // window in use). Every consumer below uses `watch`, not cfg.watch.
+  const watch = resolveWatch(usage, cfg.watch);
   const glyphs = resolveStyle(cfg.style);
   const hour12 = resolveHour12(cfg.timeFormat);
   // When snoozed (/limit-guard-snooze), suppress the guard/context directives until the
@@ -96,11 +103,11 @@ export async function runCli(mode, cwd, deps = {}) {
     if (cfg.notifications === 'on') {
       prevByKey = {};
       for (const r of readHistory(historyPath)) {
-        for (const key of cfg.watch) if (typeof r[key] === 'number') prevByKey[key] = r[key];
+        for (const key of watch) if (typeof r[key] === 'number') prevByKey[key] = r[key];
       }
     }
     const reading = { ts: nowMs };
-    for (const key of cfg.watch) {
+    for (const key of watch) {
       const u = usage[key]?.utilization;
       if (typeof u === 'number') reading[key] = u;
     }
@@ -113,14 +120,14 @@ export async function runCli(mode, cwd, deps = {}) {
   let projection = null;
   if (cfg.projectionDisplay === 'on') {
     const history = readHistory(historyPath);
-    for (const key of cfg.watch) {
+    for (const key of watch) {
       const th = overrides[key] ?? cfg.threshold;
       const mins = projectMinutesToThreshold(history, key, th, nowMs);
       if (mins != null && (projection == null || mins < projection.minutes)) projection = { minutes: mins, threshold: th };
     }
   }
 
-  const line = formatStatusLine(usage, cfg.threshold, cfg.watch, { now: nowDate, locale, hour12, glyphs, warnBand: cfg.warnBand, labelStyle: cfg.labelStyle, resetDisplay: cfg.resetDisplay, thresholdOverrides: overrides, projectionDisplay: cfg.projectionDisplay, projection });
+  const line = formatStatusLine(usage, cfg.threshold, watch, { now: nowDate, locale, hour12, glyphs, warnBand: cfg.warnBand, labelStyle: cfg.labelStyle, resetDisplay: cfg.resetDisplay, thresholdOverrides: overrides, projectionDisplay: cfg.projectionDisplay, projection });
 
   if (mode === '--statusline') {
     // Fire a desktop notification once per crossing (keyed cwd|window|resets_at|band) when
@@ -129,15 +136,15 @@ export async function runCli(mode, cwd, deps = {}) {
     if (cfg.notifications === 'on' && usage && !usage.authError) {
       // Reset toast: a watched window dropping sharply versus its prior reading means the
       // window rolled over (e.g. 88% -> 5%). One-shot per (cwd|window|new resets_at).
-      for (const key of cfg.watch) {
+      for (const key of watch) {
         const cur = usage[key]?.utilization;
         const prev = prevByKey?.[key];
         if (typeof cur === 'number' && typeof prev === 'number' && cur < prev - 15) {
           if (shouldNotify(`${cwd}|${key}|${usage[key]?.resets_at || ''}|reset`)) notify(m.notifyTitle, m.notifyReset(key));
         }
       }
-      const breachedNow = breachedLimits(usage, cfg.threshold, cfg.watch, overrides);
-      const warnedNow = warnedLimits(usage, cfg.warnBand, cfg.threshold, cfg.watch, overrides);
+      const breachedNow = breachedLimits(usage, cfg.threshold, watch, overrides);
+      const warnedNow = warnedLimits(usage, cfg.warnBand, cfg.threshold, watch, overrides);
       for (const key of breachedNow) {
         if (shouldNotify(`${cwd}|${key}|${usage[key]?.resets_at || ''}|breach`)) notify(m.notifyTitle, m.notifyBreach(key));
       }
@@ -148,7 +155,7 @@ export async function runCli(mode, cwd, deps = {}) {
     return line;
   }
 
-  const breached = breachedLimits(usage, cfg.threshold, cfg.watch, overrides);
+  const breached = breachedLimits(usage, cfg.threshold, watch, overrides);
 
   if (mode === '--context') {
     let ctx = m.contextLabel(line, cfg.threshold);
@@ -159,7 +166,7 @@ export async function runCli(mode, cwd, deps = {}) {
       } else {
         // Pass the same per-window overrides so the warn band's upper bound matches each
         // window's effective threshold (a looser per-window threshold still warns up to it).
-        const warned = warnedLimits(usage, cfg.warnBand, cfg.threshold, cfg.watch, overrides);
+        const warned = warnedLimits(usage, cfg.warnBand, cfg.threshold, watch, overrides);
         if (warned.length) {
           const action = cfg.warnAction || m.warnAction;
           ctx += ' ' + m.warn(warned.join(', '), action);
