@@ -3,5 +3,6 @@ node_modules/
 .DS_Store
 
 # kept local-only (working docs, not for the public repo)
-docs/superpowers/plans/2026-06-06-improvements.md
+docs/superpowers/specs/
+docs/superpowers/plans/
 .claude/RESUME.md
